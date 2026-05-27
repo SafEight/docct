@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+body {
+  background-color: #090a0d;
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  line-height: 1;
+}
+
+span {
+  line-height: 1;
+}
+
+.streak-bar {
+  flex-grow: 1;
+  transition-duration: 0.1s;
+}
