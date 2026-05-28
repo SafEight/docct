@@ -306,7 +306,7 @@ describe('Interval adaptation', () => {
     tickDigit(e); // check last answer
 
     const s = e.getState();
-    expect(s.currentInterval).toBe(2990); // 3000 - 10 (DECREMENT)
+    expect(s.currentInterval).toBe(2970); // 3000 - 30 (proportional step at 3.0s = 30ms)
     e.dispose();
   });
 
@@ -321,7 +321,7 @@ describe('Interval adaptation', () => {
       e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
     }
     tickDigit(e); // trigger check of 4th answer
-    expect(e.getState().currentInterval).toBe(2990); // 3000 - 10 (DECREMENT)
+    expect(e.getState().currentInterval).toBe(2970); // 3000 - 30
 
     // Submit 4 wrong answers to trigger interval increase
     for (let i = 0; i < 4; i++) {
@@ -332,8 +332,8 @@ describe('Interval adaptation', () => {
     tickDigit(e);
 
     const s = e.getState();
-    // 2990 + 10 = 3000, capped at startingInterval = 3000
-    expect(s.currentInterval).toBe(3000); // increased from 2990
+    // 2970 + 30 = 3000, capped at startingInterval = 3000
+    expect(s.currentInterval).toBe(3000); // increased from 2970
     e.dispose();
   });
 
@@ -354,8 +354,8 @@ describe('Interval adaptation', () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 700, minimumInterval: 500 }));
     await startEngine(e); // 1st
 
-    // From 700 to 500 = 200ms. With DECREMENT=10 per streak of 4, need 80 correct answers
-    for (let i = 0; i < 80; i++) {
+    // Step at 700 ≈ 7ms per streak. Need ~29 streaks = 116 correct answers.
+    for (let i = 0; i < 130; i++) {
       tickDigit(e);
       const h = e.getState().digitHistory;
       e.submitAnswer(h[h.length - 2] + h[h.length - 1]);

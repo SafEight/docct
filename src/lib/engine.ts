@@ -74,9 +74,22 @@ export interface Engine {
 const SETTINGS_KEY = 'settings';
 const HISTORY_KEY = 'sessionHistory';
 const HIGH_SCORES_KEY = 'highScores';
-const DECREMENT = 10;    // ms interval decrease on streak threshold (0.01s)
-const INCREMENT = 10;    // ms interval increase on wrong answer (0.01s)
 const STREAK_THRESHOLD = 4; // correct/wrong streak needed to change interval
+
+/**
+ * Proportional adaptation: at lower intervals the same absolute change
+ * is relatively bigger, so we scale steps with the current interval.
+ * Formula: step = max(10, round(current / 100))   [in ms]
+ *   3.0s → 30ms per step (10 steps ≈ 0.3s)
+ *   1.5s → 15ms per step
+ *   1.0s → 10ms per step (10 steps = 0.1s, same as original granularity)
+ *   0.5s → 10ms per step (minimum)
+ * Result: takes roughly the same NUMBER of streaks to adapt at every
+ * interval level, matching the original's "feel" while keeping 0.01s grid.
+ */
+function adaptationStep(currentInterval: number): number {
+  return Math.max(10, Math.round(currentInterval / 100));
+}
 const INITIAL_DELAY = 500; // ms before first digit (matches original)
 
 const DEFAULT_SETTINGS: GameSettings = {
@@ -451,7 +464,8 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     if (correctStreakCounter === STREAK_THRESHOLD) {
       longestStreakCount++;
-      currentInterval = Math.max(settings.minimumInterval, currentInterval - DECREMENT);
+      const step = adaptationStep(currentInterval);
+      currentInterval = Math.max(settings.minimumInterval, currentInterval - step);
       fastestInterval = Math.min(fastestInterval, currentInterval);
       correctStreakCounter = 0;
     }
@@ -466,7 +480,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     if (wrongStreakCounter === STREAK_THRESHOLD) {
       // Original has NO cap here — interval increases indefinitely
-      currentInterval = currentInterval + INCREMENT;
+      currentInterval = currentInterval + adaptationStep(currentInterval);
       wrongStreakCounter = 0;
     }
   }

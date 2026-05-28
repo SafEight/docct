@@ -127,7 +127,7 @@
             </div>
           {/if}
           <!-- Interval text (always show) -->
-          <span class="text-sm font-medium text-[#a9b4cc]">{(state.currentInterval / 1000).toFixed(state.currentInterval % 1000 === 0 ? 0 : 1)} SECONDS</span>
+          <span class="text-sm font-medium text-[#a9b4cc]">{(state.currentInterval / 1000).toFixed(2)} SECONDS</span>
           {#if state.canAnswer}
             <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
           {/if}
