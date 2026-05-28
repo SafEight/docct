@@ -138,9 +138,9 @@
         <!-- Digit display + interval + settled badge -->
         <div class="flex items-center gap-3">
           {#if !state.settings.useVoice && state.currentDigit !== null}
-            <!-- Text/visual mode: show digit with circular progress ring (sibling layout like original) -->
+            <!-- Text/visual mode: show digit with circular progress ring -->
             {#key currentDigit}
-              <div class="relative">
+              <div class="flex justify-center rounded-2xl transition-opacity opacity-100 relative">
                 <div>
                   <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
                 </div>
@@ -163,8 +163,8 @@
               </div>
             {/key}
           {/if}
-          <!-- Interval text (always show) -->
-          <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(2)}</span> SECONDS</span>
+          <!-- Interval text — matches original: 0 decimals for whole seconds, 1 for non-whole -->
+          <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(state.currentInterval % 1000 === 0 ? 0 : 1)}</span> SECONDS</span>
           {#if state.canAnswer}
             <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
           {/if}
