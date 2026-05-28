@@ -37,26 +37,30 @@
     return () => cancelAnimationFrame(rafId);
   });
 
-  /** Find the nearest keypad button under a touch point */
+  /** Hit-test against all keypad buttons using getBoundingClientRect.
+   *  elementFromPoint is unreliable during active touch on mobile Safari. */
   function buttonFromTouch(touch: Touch): number | null {
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!el) return null;
-    const btn = el.closest('[data-answer]') as HTMLElement | null;
-    if (!btn) return null;
-    return parseInt(btn.dataset.answer!);
-  }
-
-  /** Container touch handler: only for swipe-in (touch starts outside any button) */
-  function handleContainerTouchStart(e: TouchEvent) {
-    const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (el && el.closest('[data-answer]')) return; // button will handle its own touchstart
-    e.preventDefault();
-    swipeActive = true;
-    selectedButton = null;
+    const buttons = document.querySelectorAll('[data-answer]');
+    const pad = 6; // generous padding so finger-edge catches the button
+    for (const btn of buttons) {
+      const rect = btn.getBoundingClientRect();
+      if (
+        touch.clientX >= rect.left - pad &&
+        touch.clientX <= rect.right + pad &&
+        touch.clientY >= rect.top - pad &&
+        touch.clientY <= rect.bottom + pad
+      ) {
+        return parseInt((btn as HTMLElement).dataset.answer!);
+      }
+    }
+    return null;
   }
 
   function handleKeypadTouchStart(answer: number, e: TouchEvent) {
+    // preventDefault stops synthetic click AND scroll-on-touch, but on some
+    // old browsers it can suppress touchmove.  touch-action:none on the
+    // container is the primary scroll-gate; we keep preventDefault here
+    // as a belt-and-braces measure for click suppression.
     e.preventDefault();
     swipeActive = true;
     selectedButton = answer;
@@ -66,8 +70,11 @@
     if (!swipeActive) return;
     e.preventDefault();
     const touch = e.touches[0];
+    if (!touch) return;
     const answer = buttonFromTouch(touch);
-    if (answer !== null) selectedButton = answer;
+    if (answer !== null) {
+      selectedButton = answer;
+    }
   }
 
   function handleKeypadTouchEnd(e: TouchEvent) {
@@ -75,6 +82,15 @@
     e.preventDefault();
     swipeActive = false;
     lastTouchEndTime = Date.now();
+    // Fallback: if touchmove was suppressed by the browser, use the final
+    // touch position from changedTouches to determine the lifted button.
+    const touch = e.changedTouches[0];
+    if (touch) {
+      const answer = buttonFromTouch(touch);
+      if (answer !== null) {
+        selectedButton = answer;
+      }
+    }
     if (selectedButton !== null) {
       engine.submitAnswer(selectedButton);
     }
@@ -200,7 +216,7 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="flex justify-center"
-        ontouchstart={handleContainerTouchStart}
+        style="touch-action: none;"
         ontouchmove={handleKeypadTouchMove}
         ontouchend={handleKeypadTouchEnd}
       >
