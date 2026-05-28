@@ -60,6 +60,7 @@ export interface Engine {
   pause(): void;
   resume(): void;
   stop(): void;
+  restart(): void;
   submitAnswer(answer: number): void;
   completeOnboarding(): void;
   showOnboarding(): void;
@@ -697,6 +698,13 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     stop() {
       stopSession();
+    },
+
+    restart() {
+      if (phase !== 'complete') return;
+      phase = 'setup';
+      sessionResults = null;
+      notify();
     },
 
     submitAnswer(answer) {
