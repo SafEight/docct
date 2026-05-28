@@ -70,9 +70,9 @@
 
   <!-- Bottom section (inside the flex-col wrapper) -->
   <div class="flex flex-col p-6 pb-12 md:p-0 bg-[#0f121a] md:bg-[#090a0d] justify-between">
-    <button class="cursor-pointer flex justify-center items-center gap-6 bg-[#4f79e8] hover:opacity-75 py-6 px-18 rounded-full border" onclick={() => engine.start()}>
+    <button class="cursor-pointer flex justify-center items-center gap-6 bg-[#10b981] hover:opacity-75 py-6 px-18 rounded-full border" onclick={() => engine.start()}>
       <div class="bg-[#0f121a] p-1 rounded-md">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Play--Streamline-Solar" height="12" width="12"><g id="Bold Duotone/Video Audio Sound/Play"><path id="Vector" fill="#4f79e8" d="m8.59662 21.6145 12.81198 -6.9671C22.4695 14.0705 23 13.0352 23 12H4v6.9671c0 2.3092 2.53435 3.7689 4.59662 2.6474Z" stroke-width="1"></path><path id="Vector_2" fill="#4f79e8" fill-rule="evenodd" d="M23 12c0 -1.0352 -0.5305 -2.07047 -1.5914 -2.64742L8.59661 2.38548C6.53435 1.26402 4 2.72368 4 5.0329V12h19Z" clip-rule="evenodd" stroke-width="1"></path></g></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Play--Streamline-Solar" height="12" width="12"><g id="Bold Duotone/Video Audio Sound/Play"><path id="Vector" fill="#10b981" d="m8.59662 21.6145 12.81198 -6.9671C22.4695 14.0705 23 13.0352 23 12H4v6.9671c0 2.3092 2.53435 3.7689 4.59662 2.6474Z" stroke-width="1"></path><path id="Vector_2" fill="#10b981" fill-rule="evenodd" d="M23 12c0 -1.0352 -0.5305 -2.07047 -1.5914 -2.64742L8.59661 2.38548C6.53435 1.26402 4 2.72368 4 5.0329V12h19Z" clip-rule="evenodd" stroke-width="1"></path></g></svg>
       </div>
       <span class="text-[#0f121a] font-semibold">Start session</span>
     </button>

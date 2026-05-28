@@ -80,14 +80,14 @@
           labels: accuracyData.map(d => ''),
           datasets: [{
             data: accuracyData.map(d => d.y),
-            borderColor: '#4f79e8',
+            borderColor: '#10b981',
             borderWidth: 3,
             pointRadius: 4,
             pointBackgroundColor: '#dce7ff',
             pointBorderColor: '#dce7ff',
             pointHoverRadius: 5,
             pointHoverBackgroundColor: '#dce7ff',
-            pointHoverBorderColor: '#4f79e8',
+            pointHoverBorderColor: '#10b981',
             fill: true,
             backgroundColor: 'rgba(79,121,232,0.18)',
             tension: 0.28,
@@ -180,7 +180,7 @@
       <button class="cursor-pointer flex items-center gap-6 bg-[#0f121a] hover:bg-[#121621] py-3 px-8 rounded-full border border-[#273049]" onclick={() => onHistory?.()}>
         <span class="text-[#a9b4cc] font-semibold">History</span>
       </button>
-      <button class="cursor-pointer flex items-center gap-6 bg-[#4f79e8] hover:opacity-75 py-3 px-18 rounded-full border" onclick={() => engine.restart()}>
+      <button class="cursor-pointer flex items-center gap-6 bg-[#10b981] hover:opacity-75 py-3 px-18 rounded-full border" onclick={() => engine.restart()}>
         <span class="text-[#090a0d] font-semibold">Start again</span>
       </button>
     </div>

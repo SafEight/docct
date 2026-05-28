@@ -35,7 +35,7 @@
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.taskMode === '1-back' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ taskMode: '1-back' })}>
       <span class="font-medium {state.settings.taskMode === '1-back' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Regular</span>
       {#if state.settings.taskMode === '1-back'}
-        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
       {:else}
         <span>&bull;</span>
       {/if}
@@ -45,7 +45,7 @@
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.taskMode === '2-back' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ taskMode: '2-back' })}>
       <span class="font-medium {state.settings.taskMode === '2-back' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">2-back</span>
       {#if state.settings.taskMode === '2-back'}
-        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
       {:else}
         <span>&bull;</span>
       {/if}
@@ -55,7 +55,7 @@
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.taskMode === 'variable' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ taskMode: 'variable' })}>
       <span class="font-medium {state.settings.taskMode === 'variable' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Variable</span>
       {#if state.settings.taskMode === 'variable'}
-        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
       {:else}
         <span>&bull;</span>
       {/if}
@@ -72,7 +72,7 @@
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.voicePack === 'rose' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ voicePack: 'rose' })}>
       <span class="font-medium {state.settings.voicePack === 'rose' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Rose</span>
       {#if state.settings.voicePack === 'rose'}
-        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
       {:else}
         <span>&bull;</span>
       {/if}
@@ -82,7 +82,7 @@
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.voicePack === 'rose_fast' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ voicePack: 'rose_fast' })}>
       <span class="font-medium {state.settings.voicePack === 'rose_fast' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Rose Fast</span>
       {#if state.settings.voicePack === 'rose_fast'}
-        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
       {:else}
         <span>&bull;</span>
       {/if}
@@ -92,7 +92,7 @@
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.voicePack === 'jenny' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ voicePack: 'jenny' })}>
       <span class="font-medium {state.settings.voicePack === 'jenny' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Jenny</span>
       {#if state.settings.voicePack === 'jenny'}
-        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
       {:else}
         <span>&bull;</span>
       {/if}
@@ -103,7 +103,7 @@
     <!-- Beep toggle -->
     <button class="group flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000]" onclick={() => engine.updateSettings({ beepOnIncorrect: !state.settings.beepOnIncorrect })}>
       <span class="font-medium text-[#090a0d] group-hover:text-[#a9b4cc]">Beep on wrong answer</span>
-      <span class="text-sm font-semibold {state.settings.beepOnIncorrect ? 'text-[#4f79e8]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">{state.settings.beepOnIncorrect ? 'On' : 'Off'}</span>
+      <span class="text-sm font-semibold {state.settings.beepOnIncorrect ? 'text-[#10b981]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">{state.settings.beepOnIncorrect ? 'On' : 'Off'}</span>
     </button>
 
     <div class="my-1 h-px bg-[#7e889c]"></div>

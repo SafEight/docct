@@ -17,7 +17,7 @@
 
       <div class="flex justify-stretch md:justify-end">
         <button
-          class="cursor-pointer flex w-full items-center justify-center gap-6 rounded-full border bg-[#4f79e8] px-8 py-3 hover:opacity-75 md:w-auto"
+          class="cursor-pointer flex w-full items-center justify-center gap-6 rounded-full border bg-[#10b981] px-8 py-3 hover:opacity-75 md:w-auto"
           onclick={() => engine.completeOnboarding()}
         >
           <span class="text-[#0f121a] font-semibold">Continue</span>

@@ -39,10 +39,10 @@
         labels: sessions.map((_, i) => ''),
         datasets: [{
           data: sessions.map(s => Math.round(s.accuracy * 100)),
-          borderColor: '#4f79e8',
+          borderColor: '#10b981',
           borderWidth: 2,
           pointRadius: 3,
-          pointBackgroundColor: '#4f79e8',
+          pointBackgroundColor: '#10b981',
           fill: false,
           tension: 0.4
         }]
@@ -71,10 +71,10 @@
           labels: sessions.map((_, i) => ''),
           datasets: [{
             data: sessions.map(s => s.fastestIntervalMs),
-            borderColor: '#4f79e8',
+            borderColor: '#10b981',
             borderWidth: 2,
             pointRadius: 3,
-            pointBackgroundColor: '#4f79e8',
+            pointBackgroundColor: '#10b981',
             fill: false,
             tension: 0.4
           }]
@@ -153,7 +153,7 @@
             <div class="flex items-center gap-4">
               <div class="flex flex-col">
                 <span class="text-[#7e889c] text-xs">Accuracy</span>
-                <span class="text-[#4f79e8] text-lg font-bold">{Math.round(session.accuracy * 100)}%</span>
+                <span class="text-[#10b981] text-lg font-bold">{Math.round(session.accuracy * 100)}%</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-[#7e889c] text-xs">Fastest</span>

@@ -74,8 +74,8 @@ export interface Engine {
 const SETTINGS_KEY = 'settings';
 const HISTORY_KEY = 'sessionHistory';
 const HIGH_SCORES_KEY = 'highScores';
-const DECREMENT = 100;   // ms interval decrease on streak threshold
-const INCREMENT = 100;   // ms interval increase on wrong answer
+const DECREMENT = 10;    // ms interval decrease on streak threshold (0.01s)
+const INCREMENT = 10;    // ms interval increase on wrong answer (0.01s)
 const STREAK_THRESHOLD = 4; // correct/wrong streak needed to change interval
 const INITIAL_DELAY = 500; // ms before first digit (matches original)
 
