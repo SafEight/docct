@@ -78,13 +78,14 @@ const STREAK_THRESHOLD = 4; // correct/wrong streak needed to change interval
 
 /**
  * Proportional adaptation: step scales with current interval.
- * Formula: step = max(20, round(current / 50))   [in ms]
- *   3.0s → 60ms per step (10 steps ≈ 0.6s, fast)
- *   1.0s → 20ms per step (10 steps = 0.2s)
- *   0.5s → 20ms per step (floor)
+ * Formula: step = max(10, round(current / 25))   [in ms]
+ *   3.0s → 120ms per step (fast descent from high intervals)
+ *   1.0s →  40ms per step
+ *   0.5s →  20ms per step
+ *   0.3s →  12ms per step (approaching floor)
  */
 function adaptationStep(current: number): number {
-  return Math.max(20, Math.round(current / 50));
+  return Math.max(10, Math.round(current / 25));
 }
 const INITIAL_DELAY = 500; // ms before first digit (matches original)
 
