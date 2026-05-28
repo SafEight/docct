@@ -1,4 +1,4 @@
-// DOCCT Game Engine — Pure logic, zero DOM, zero Svelte
+// DOCCT Game Engine — Pure logic with Web Audio API
 // Forensically matched to the original at docct.pages.dev
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -62,10 +62,9 @@ export interface Engine {
   stop(): void;
   submitAnswer(answer: number): void;
   completeOnboarding(): void;
+  showOnboarding(): void;
   updateSettings(s: Partial<GameSettings>): void;
   loadHistory(): SessionResult[];
-  getDigitAudioUrl(digit: number): string;
-  getBeepAudioUrl(): string;
   dispose(): void;
 }
 
@@ -77,6 +76,7 @@ const HIGH_SCORES_KEY = 'highScores';
 const DECREMENT = 100;   // ms interval decrease on streak threshold
 const INCREMENT = 100;   // ms interval increase on wrong answer
 const STREAK_THRESHOLD = 4; // correct/wrong streak needed to change interval
+const INITIAL_DELAY = 500; // ms before first digit (matches original)
 
 const DEFAULT_SETTINGS: GameSettings = {
   timer: 600,
@@ -170,6 +170,14 @@ function updateBestScores(mode: string, session: { fastest: number; streaks: num
   return updated;
 }
 
+// ── Voice pack path map ───────────────────────────────────────────────────
+
+const VOICE_PACK_PATHS: Record<string, string> = {
+  rose: '/rose',
+  rose_fast: '/rose_fast',
+  jenny: '/jenny',
+};
+
 // ── Engine Factory ─────────────────────────────────────────────────────────
 
 export function createEngine(overrides?: Partial<GameSettings>): Engine {
@@ -191,16 +199,15 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   let wrongStreak = 0;        // display wrong streak (capped at threshold)
   let longestStreakCount = 0;
   let totalCorrect = 0;
-  let totalAnswers = 0;
+  let totalWrong = 0;         // counts WRONG answers only (like original)
   let digitHistory: number[] = [];
-  let nBack = 1;
-  let currentNBack = 1;       // actual n-back for current digit
+  let currentNBack = 1;
   let lastAnswerCorrect: boolean | null = null;
   let sessionResults: SessionResult | null = null;
 
   // Internal streak counters (toward threshold)
-  let correctStreakCounter = 0;   // k in original
-  let wrongStreakCounter = 0;     // D in original
+  let correctStreakCounter = 0;
+  let wrongStreakCounter = 0;
 
   // Response time tracking
   let digitShownAt = 0;
@@ -215,11 +222,84 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   // Timers
   let countdownTimer: ReturnType<typeof setInterval> | null = null;
   let digitTimer: ReturnType<typeof setTimeout> | null = null;
-  let audioTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // ── Web Audio API ──────────────────────────────────────────────────────
+  let audioContext: AudioContext | null = null;
+  let voiceBuffers: (AudioBuffer | null)[] = new Array(9).fill(null);
+  let beepBuffer: AudioBuffer | null = null;
+  let loadedVoicePack: string = '';
+  let audioPlayingId = 0;     // monotonic ID to track which audio is current
+
+  function getAudioContext(): AudioContext {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+    }
+    return audioContext;
+  }
+
+  async function preloadVoicePack(packName: string): Promise<void> {
+    const ctx = getAudioContext();
+    const basePath = VOICE_PACK_PATHS[packName] || VOICE_PACK_PATHS.rose;
+    
+    if (loadedVoicePack === packName && voiceBuffers.every(b => b !== null)) return;
+    
+    const buffers: (AudioBuffer | null)[] = [];
+    for (let i = 1; i <= 9; i++) {
+      try {
+        const response = await fetch(`${basePath}/${i}.wav`);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        buffers.push(audioBuffer);
+      } catch {
+        buffers.push(null);
+      }
+    }
+    voiceBuffers = buffers;
+    loadedVoicePack = packName;
+  }
+
+  async function preloadBeep(): Promise<void> {
+    if (beepBuffer) return;
+    try {
+      const ctx = getAudioContext();
+      const response = await fetch('/beep.wav');
+      const arrayBuffer = await response.arrayBuffer();
+      beepBuffer = await ctx.decodeAudioData(arrayBuffer);
+    } catch { /* ignore */ }
+  }
+
+  function playDigitSound(digit: number): number {
+    const ctx = getAudioContext();
+    const buffer = voiceBuffers[digit - 1];
+    if (!buffer) return 0;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.onended = () => { source.disconnect(); };
+    source.start(0);
+    return buffer.duration * 1000; // return duration in ms
+  }
+
+  function playBeepSound(): void {
+    const ctx = getAudioContext();
+    if (!beepBuffer) return;
+
+    const source = ctx.createBufferSource();
+    source.buffer = beepBuffer;
+    source.connect(ctx.destination);
+    source.onended = () => { source.disconnect(); };
+    source.start(0);
+  }
 
   // ── State builder ──────────────────────────────────────────────────────
 
   function buildState(): GameState {
+    // Live accuracy: totalCorrect / (totalCorrect + totalWrong)
+    // This matches the original: me() increments totalCorrect only, Ot() increments totalWrong only
+    const totalTrials = totalCorrect + totalWrong;
+    const liveAccuracy = totalTrials > 0 ? totalCorrect / totalTrials : 1;
+
     return {
       phase,
       currentDigit,
@@ -227,13 +307,13 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       isPlayingAudio,
       timeLeft,
       totalTime,
-      accuracy: totalAnswers > 0 ? totalCorrect / totalAnswers : 1,
+      accuracy: liveAccuracy,
       fastestInterval,
       currentInterval,
       correctStreak,
       wrongStreak,
       totalCorrect,
-      totalAnswers,
+      totalAnswers: totalCorrect + totalWrong, // total trials (for display)
       digitHistory: [...digitHistory],
       nBack: currentNBack,
       lastAnswerCorrect,
@@ -256,8 +336,8 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     return settings.taskMode === '2-back' ? 2 : 1;
   }
 
-  // ── Streak reset check (Gt in original) ────────────────────────────────
-  // Called at start of each digit cycle to reset display if at threshold
+  // ── Streak reset check ─────────────────────────────────────────────────
+
   function checkStreakReset(): void {
     if (correctStreak === STREAK_THRESHOLD) correctStreak = 0;
     if (wrongStreak === STREAK_THRESHOLD) wrongStreak = 0;
@@ -277,7 +357,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     // If no answer submitted, it's wrong
     if (pendingAnswer === undefined) {
       recordIncorrect();
-      if (settings.beepOnIncorrect) playBeep();
+      if (settings.beepOnIncorrect) playBeepSound();
       return;
     }
 
@@ -289,7 +369,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     // Wrong answer
     recordIncorrect();
-    if (settings.beepOnIncorrect) playBeep();
+    if (settings.beepOnIncorrect) playBeepSound();
   }
 
   // ── Score recording ────────────────────────────────────────────────────
@@ -310,14 +390,15 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   }
 
   function recordIncorrect(): void {
-    totalAnswers++;
+    totalWrong++;
     wrongStreakCounter++;
     correctStreakCounter = 0;
     correctStreak = 0;
     wrongStreak = Math.min(wrongStreakCounter, STREAK_THRESHOLD);
 
     if (wrongStreakCounter === STREAK_THRESHOLD) {
-      currentInterval = Math.min(settings.startingInterval, currentInterval + INCREMENT);
+      // Original has NO cap here — interval increases indefinitely
+      currentInterval = currentInterval + INCREMENT;
       wrongStreakCounter = 0;
     }
   }
@@ -327,31 +408,14 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   function stopTimers(): void {
     if (countdownTimer !== null) { clearInterval(countdownTimer); countdownTimer = null; }
     if (digitTimer !== null) { clearTimeout(digitTimer); digitTimer = null; }
-    if (audioTimer !== null) { clearTimeout(audioTimer); audioTimer = null; }
-  }
-
-  // ── Audio ──────────────────────────────────────────────────────────────
-
-  function playBeep(): void {
-    if (typeof AudioContext === 'undefined') return;
-    try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 800;
-      gain.gain.value = 0.3;
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      osc.stop(ctx.currentTime + 0.3);
-    } catch { /* ignore */ }
   }
 
   // ── Digit loop ─────────────────────────────────────────────────────────
 
-  function scheduleNextDigit(): void {
+  function scheduleNextDigit(delayMs?: number): void {
     if (phase !== 'active') return;
+    const delay = delayMs !== undefined ? delayMs : currentInterval;
+    
     digitTimer = setTimeout(() => {
       if (phase !== 'active') return;
 
@@ -385,40 +449,43 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       canAnswer = expectedAnswer !== undefined;
       digitShownAt = Date.now();
 
-      // Track total answers from correct (the correct count is tracked in recordCorrect)
-      // But we need to track totalAnswers properly - in original, it increments in Ot() and me()
-      // Actually totalAnswers is only incremented in recordIncorrect. recordCorrect increments totalCorrect.
-      // The accuracy is totalCorrect / (totalCorrect + totalAnswers)
-      // Wait, let me re-check...
+      // Play digit audio if voice mode
+      let audioDurationMs = 0;
+      audioPlayingId++;
+      if (settings.useVoice) {
+        audioDurationMs = playDigitSound(digit);
+        isPlayingAudio = true;
+        notify();
 
-      // In original: me() does M(c,b(c)+1) which is totalCorrect++
-      // Ot() does M(d,b(d)+1) which is totalAnswers++
-      // accuracy = c / (c + d)
-      // So totalAnswers counts WRONG answers only, and accuracy = correct / (correct + wrong)
+        // Track when audio actually ends
+        const currentId = audioPlayingId;
+        const safetyTimeout = setTimeout(() => {
+          if (audioPlayingId === currentId && isPlayingAudio) {
+            isPlayingAudio = false;
+            notify();
+          }
+        }, audioDurationMs + 200);
 
-      // But in our engine, totalAnswers counts ALL answers. Let me fix this.
-      // Actually, looking at the original more carefully:
-      // me(): totalCorrect++, correctStreakCounter++, no totalAnswers increment
-      // Ot(): totalAnswers++, wrongStreakCounter++
-      // So totalAnswers = wrong count only
-      // accuracy = totalCorrect / (totalCorrect + totalAnswers)
-
-      // Hmm, but the clone's accuracy = totalCorrect / totalAnswers where totalAnswers includes correct.
-      // This is a difference! Let me match the original.
-
-      isPlayingAudio = true;
-      notify();
-
-      // Simulate audio playback completion (in original this uses actual audio duration)
-      const audioDuration = 500; // approximate
-      audioTimer = setTimeout(() => {
+        // Also try to detect actual end
+        const ctx = getAudioContext();
+        // Safety: just use the buffer duration
+        clearTimeout(digitTimer as any); // clear any stale
+        setTimeout(() => {
+          if (audioPlayingId === currentId) {
+            isPlayingAudio = false;
+            notify();
+          }
+        }, audioDurationMs + 100);
+      } else {
         isPlayingAudio = false;
         notify();
-      }, audioDuration);
+      }
 
-      // Schedule next digit after interval
-      scheduleNextDigit();
-    }, currentInterval);
+      notify();
+
+      // Schedule next digit: delay = currentInterval + audio duration
+      scheduleNextDigit(currentInterval + audioDurationMs);
+    }, delay);
   }
 
   // ── Countdown timer ────────────────────────────────────────────────────
@@ -426,11 +493,13 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   function startCountdown(): void {
     countdownTimer = setInterval(() => {
       if (phase !== 'active') return;
-      timeLeft--;
-      if (timeLeft <= 0) {
+      // Original checks timeLeft <= 1 BEFORE decrementing
+      if (timeLeft <= 1) {
         timeLeft = 0;
         stopSession();
+        return;
       }
+      timeLeft--;
       notify();
     }, 1000);
   }
@@ -446,11 +515,8 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     pendingAnswer = undefined;
 
     const durationSec = totalTime - timeLeft;
-    // In original: accuracy = totalCorrect / (totalCorrect + totalAnswers)
-    // where totalAnswers = wrong count only
-    const accuracy = (totalCorrect + totalAnswers) > 0
-      ? totalCorrect / (totalCorrect + totalAnswers)
-      : 0;
+    const totalTrials = totalCorrect + totalWrong;
+    const accuracy = totalTrials > 0 ? totalCorrect / totalTrials : 0;
     const averageResponseMs = responseCount > 0 ? totalResponseMs / responseCount : 0;
 
     sessionResults = {
@@ -462,7 +528,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       endingIntervalMs: currentInterval,
       averageResponseTimeMs: averageResponseMs,
       correctCount: totalCorrect,
-      totalAnswers: totalCorrect + totalAnswers, // total trials
+      totalAnswers: totalTrials,
       streaks: longestStreakCount,
       useVoice: settings.useVoice,
       useKeypad: settings.useKeypad,
@@ -483,6 +549,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     phase = 'complete';
     currentDigit = null;
     canAnswer = false;
+    isPlayingAudio = false;
     notify();
   }
 
@@ -511,9 +578,8 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       wrongStreakCounter = 0;
       longestStreakCount = 0;
       totalCorrect = 0;
-      totalAnswers = 0;
+      totalWrong = 0;
       digitHistory = [];
-      nBack = 1;
       currentNBack = 1;
       lastAnswerCorrect = null;
       sessionResults = null;
@@ -529,7 +595,21 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       phase = 'active';
       notify();
       startCountdown();
-      scheduleNextDigit();
+
+      // Preload voice pack and beep, then start with initial delay
+      Promise.all([
+        preloadVoicePack(settings.voicePack),
+        preloadBeep(),
+      ]).then(() => {
+        if (phase === 'active') {
+          // Set navigator.audioSession for mobile
+          if (typeof navigator !== 'undefined' && navigator.audioSession) {
+            navigator.audioSession.type = 'playback';
+          }
+          // Original starts first digit after 500ms (hardcoded initial delay)
+          scheduleNextDigit(INITIAL_DELAY);
+        }
+      });
     },
 
     pause() {
@@ -544,7 +624,8 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       phase = 'active';
       notify();
       startCountdown();
-      scheduleNextDigit();
+      // Original resumes with immediate next digit (0ms delay)
+      scheduleNextDigit(0);
     },
 
     stop() {
@@ -563,7 +644,6 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
         lastResponseTime = performance.now() - digitShownAt;
       }
 
-      // Set final answer for display purposes
       lastAnswerCorrect = null; // will be determined on next digit
       notify();
     },
@@ -572,6 +652,10 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       settings.onboardingCompleted = true;
       saveSettingsToStorage(settings);
       phase = 'setup';
+      notify();
+    },
+    showOnboarding() {
+      phase = 'onboarding';
       notify();
     },
 
@@ -585,17 +669,13 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       return loadHistoryFromStorage();
     },
 
-    getDigitAudioUrl(digit: number): string {
-      return `/${settings.voicePack}/${digit}.wav`;
-    },
-
-    getBeepAudioUrl(): string {
-      return '/beep.wav';
-    },
-
     dispose() {
       stopTimers();
       subscribers.length = 0;
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
     },
   };
 }

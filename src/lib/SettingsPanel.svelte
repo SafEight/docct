@@ -109,7 +109,7 @@
     <div class="my-1 h-px bg-[#7e889c]"></div>
 
     <!-- View instructions -->
-    <button class="group flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000]" onclick={() => { engine.completeOnboarding(); close(); }}>
+    <button class="group flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000]" onclick={() => { engine.showOnboarding(); close(); }}>
       <span class="font-medium text-[#090a0d] group-hover:text-[#a9b4cc]">View instructions</span>
       <span class="text-[#090a0d] group-hover:text-[#a9b4cc]">&rsaquo;</span>
     </button>

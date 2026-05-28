@@ -80,11 +80,15 @@
           </button>
         {/if}
 
-        <!-- Digit display + settled badge -->
+        <!-- Digit display + interval + settled badge -->
         <div class="flex items-center gap-3">
           <span class="text-sm text-[#a9b4cc]">
             {#if state.currentDigit !== null}
               <span class="font-extrabold">{state.currentDigit}</span>
+            {/if}
+            {#if state.currentDigit !== null}
+              {@const secs = state.currentInterval / 1000}
+              {Number.isInteger(secs) ? secs : secs.toFixed(1)} SECOND{secs === 1 ? '' : 'S'}
             {/if}
           </span>
           {#if state.canAnswer}
