@@ -97,9 +97,19 @@
   }
 
   function handleKeypadClick(answer: number, e: MouseEvent) {
-    // Ignore synthetic clicks that immediately follow a touch sequence (swipe or tap).
-    // Mobile browsers synthesise a click ~300–350 ms after touchend on the element
-    // where the touch *started*. For a swipe that element is the wrong button.
+    // If we're in a swipe/touch sequence, suppress the synthetic click.
+    // Mobile browsers synthesize a click ~300ms after touchend on the
+    // element where the touch STARTED — which is the wrong button for
+    // a swipe.  swipeActive is the single source of truth: it is set
+    // on touchstart and cleared in touchend.
+    if (swipeActive) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
+      return;
+    }
+    // Belt-and-braces: also suppress clicks very close to a touchend
+    // (catches edge cases where swipeActive was already cleared).
     if (Date.now() - lastTouchEndTime < 500) {
       e.preventDefault();
       e.stopPropagation();
