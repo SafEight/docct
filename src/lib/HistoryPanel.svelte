@@ -1,10 +1,9 @@
 <script lang="ts">
-  import type { Engine, GameState, SessionEntry } from '$lib/engine';
-  import { createEventDispatcher, onMount } from 'svelte';
+  import type { Engine, GameState, SessionResult } from '$lib/engine';
+  import { onMount } from 'svelte';
 
-  let { engine }: { engine: Engine } = $props();
+  let { engine, close }: { engine: Engine; close: () => void } = $props();
   let state = $state<GameState>(engine.getState());
-  const dispatch = createEventDispatcher();
   let chartCanvas: HTMLCanvasElement;
   let intervalChartCanvas: HTMLCanvasElement;
   let Chart: any;
@@ -14,7 +13,7 @@
   });
 
   $effect(() => {
-    if (state.sessionHistory.length > 0 && chartCanvas && Chart) {
+    if (state.history.length > 0 && chartCanvas && Chart) {
       renderCharts();
     }
   });
@@ -23,7 +22,7 @@
     const chartModule = await import('chart.js/auto');
     Chart = chartModule.default;
 
-    if (state.sessionHistory.length > 0) {
+    if (state.history.length > 0) {
       renderCharts();
     }
   });
@@ -31,7 +30,7 @@
   function renderCharts() {
     if (!chartCanvas || !Chart) return;
 
-    const sessions = [...state.sessionHistory].reverse();
+    const sessions = [...state.history].reverse();
 
     // Accuracy chart
     new Chart(chartCanvas, {
@@ -110,20 +109,20 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="bg-black/80 fixed inset-0 z-3 flex items-center justify-center" role="dialog" aria-label="History" onclick={() => dispatch('close')}>
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="bg-black/80 fixed inset-0 z-3 flex items-center justify-center" role="dialog" aria-label="History" onclick={close}>
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="bg-[#0f121a] rounded-[24px] p-6 max-w-[600px] w-full mx-4 max-h-[80vh] overflow-y-auto border border-[#a9b4cc]" onclick={(e) => e.stopPropagation()}>
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-[#ffffff] text-2xl font-bold">History</h2>
-      <button class="text-[#7e889c] hover:text-white cursor-pointer" aria-label="Close history" onclick={() => dispatch('close')}>
+      <button class="text-[#7e889c] hover:text-white cursor-pointer" aria-label="Close history" onclick={close}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.3 5.71a1 1 0 0 0-1.42 0L12 10.59 7.12 5.71A1 1 0 0 0 5.7 7.12L10.59 12l-4.88 4.88a1 1 0 0 0 1.42 1.42L12 13.41l4.88 4.88a1 1 0 0 0 1.42-1.42L13.41 12l4.88-4.88a1 1 0 0 0 0-1.41z"/>
         </svg>
       </button>
     </div>
 
-    {#if state.sessionHistory.length === 0}
+    {#if state.history.length === 0}
       <div class="text-center py-12">
         <span class="text-[#7e889c] text-lg">No sessions yet</span>
       </div>
@@ -145,7 +144,7 @@
 
       <!-- Session list -->
       <div class="flex flex-col gap-2">
-        {#each state.sessionHistory as session}
+        {#each state.history as session}
           <div class="bg-[#121621] rounded-xl p-4 flex flex-col gap-2">
             <div class="flex items-center justify-between">
               <span class="text-[#7e889c] text-xs">{formatDate(session.completedAt)}</span>

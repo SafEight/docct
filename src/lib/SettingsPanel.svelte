@@ -1,10 +1,8 @@
 <script lang="ts">
   import type { Engine, GameState } from '$lib/engine';
-  import { createEventDispatcher } from 'svelte';
 
-  let { engine }: { engine: Engine } = $props();
+  let { engine, close }: { engine: Engine; close: () => void } = $props();
   let state = $state<GameState>(engine.getState());
-  const dispatch = createEventDispatcher();
 
   $effect(() => {
     return engine.subscribe((s) => { state = s; });
@@ -27,7 +25,7 @@
 <div class="absolute right-0 top-[42px] w-[220px] bg-[#0f121a] rounded-xl border border-[#a9b4cc] shadow-2xl z-50 overflow-hidden" onclick={(e) => e.stopPropagation()}>
   <div class="p-4 flex flex-col gap-4">
     <!-- Close button -->
-    <button class="absolute top-3 right-3 text-[#7e889c] hover:text-white cursor-pointer" aria-label="Close settings" onclick={() => dispatch('close')}>
+    <button class="absolute top-3 right-3 text-[#7e889c] hover:text-white cursor-pointer" aria-label="Close settings" onclick={close}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
         <path d="M18.3 5.71a1 1 0 0 0-1.42 0L12 10.59 7.12 5.71A1 1 0 0 0 5.7 7.12L10.59 12l-4.88 4.88a1 1 0 0 0 1.42 1.42L12 13.41l4.88 4.88a1 1 0 0 0 1.42-1.42L13.41 12l4.88-4.88a1 1 0 0 0 0-1.41z"/>
       </svg>

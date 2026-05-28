@@ -14,15 +14,18 @@
   });
 </script>
 
-{#if state.phase === 'onboarding'}
-  <Onboarding {engine} />
-{:else if state.phase === 'setup'}
-  <Setup {engine} />
-{:else if state.phase === 'active'}
-  <ActiveSession {engine} />
-{:else if state.phase === 'paused'}
-  <ActiveSession {engine} />
-  <PausedOverlay {engine} />
-{:else if state.phase === 'complete'}
-  <SessionComplete {engine} />
-{/if}
+<div class="fixed flex w-full h-full z-2 overflow-auto">
+  {#if state.phase === 'onboarding'}
+    <Onboarding {engine} />
+    <Setup {engine} />
+  {:else if state.phase === 'setup'}
+    <Setup {engine} />
+  {:else if state.phase === 'active'}
+    <ActiveSession {engine} />
+  {:else if state.phase === 'paused'}
+    <ActiveSession {engine} />
+    <PausedOverlay {engine} />
+  {:else if state.phase === 'complete'}
+    <SessionComplete {engine} />
+  {/if}
+</div>

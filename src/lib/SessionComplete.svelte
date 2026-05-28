@@ -128,8 +128,8 @@
   <div class="flex flex-col items-center w-full py-8 px-4 gap-8">
     <h1 class="text-[#ffffff] text-3xl font-bold" style="line-height: 1.2;">SESSION COMPLETE</h1>
 
-    {#if state.sessionHistory.length > 0}
-      {@const session = state.sessionHistory[0]}
+    {#if state.history.length > 0}
+      {@const session = state.history[0]}
 
       <!-- Stats grid -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-[600px]">

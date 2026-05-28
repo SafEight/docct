@@ -3,16 +3,26 @@
 
   let { engine }: { engine: Engine } = $props();
   let state = $state<GameState>(engine.getState());
+  let lastAnswerCorrect: boolean | null = $state(null);
 
   $effect(() => {
-    return engine.subscribe((s) => { state = s; });
+    return engine.subscribe((s) => {
+      lastAnswerCorrect = s.lastAnswerCorrect;
+      state = s;
+    });
   });
 
-  let displayTime = $derived(() => {
-    const mins = Math.floor(state.timer / 60);
-    const secs = state.timer % 60;
+  let displayTime = $derived.by(() => {
+    const mins = Math.floor(state.timeLeft / 60);
+    const secs = state.timeLeft % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   });
+
+  let timerProgress = $derived(state.totalTime > 0 ? state.timeLeft / state.totalTime : 0);
+
+  let answerResult = $derived<'correct' | 'incorrect' | null>(
+    lastAnswerCorrect === true ? 'correct' : lastAnswerCorrect === false ? 'incorrect' : null
+  );
 
   let keypadNumbers = $derived([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
 
@@ -24,11 +34,6 @@
   $effect(() => {
     function handleKeydown(e: KeyboardEvent) {
       if (state.phase !== 'active') return;
-
-      if (e.key >= '0' && e.key <= '9') {
-        // Handle multi-digit input
-        return;
-      }
 
       if (e.key === 'Escape') {
         engine.pause();
@@ -44,14 +49,14 @@
   <!-- Streak bar -->
   <div class="flex w-full h-1">
     <div
-      class="streak-bar {state.answerResult === 'correct' ? 'bg-[#4fe84f]' : state.answerResult === 'incorrect' ? 'bg-[#e85c4f]' : 'bg-[#7e889c]'}"
-      style="width: {state.timerProgress * 100}%"
+      class="streak-bar {answerResult === 'correct' ? 'bg-[#4fe84f]' : answerResult === 'incorrect' ? 'bg-[#e85c4f]' : 'bg-[#7e889c]'}"
+      style="width: {timerProgress * 100}%"
     ></div>
   </div>
 
   <!-- Timer bar (progress) -->
   <div class="w-full h-1 bg-[#0f121a]">
-    <div class="h-full bg-[#4f79e8] transition-all duration-1000" style="width: {state.timerProgress * 100}%"></div>
+    <div class="h-full bg-[#4f79e8] transition-all duration-1000" style="width: {timerProgress * 100}%"></div>
   </div>
 
   <!-- Top controls -->
@@ -59,7 +64,7 @@
     <div class="flex items-center gap-3">
       <!-- Timer -->
       <div class="bg-[#0f121a] px-4 py-2 rounded-md border-2 border-[#7e889c]">
-        <span class="text-white text-lg font-medium font-mono">{displayTime()}</span>
+        <span class="text-white text-lg font-medium font-mono">{displayTime}</span>
       </div>
     </div>
 
@@ -104,8 +109,8 @@
         {#each keypadNumbers as num}
           <button
             class="w-[52px] h-[52px] md:w-[60px] md:h-[60px] rounded-md flex items-center justify-center text-lg font-medium cursor-pointer border transition-all duration-150
-              {state.answerResult === 'correct' ? 'bg-[#4fe84f] text-[#090a0d] border-[#4fe84f]' :
-               state.answerResult === 'incorrect' ? 'bg-[#e85c4f] text-[#ffffff] border-[#e85c4f]' :
+              {answerResult === 'correct' ? 'bg-[#4fe84f] text-[#090a0d] border-[#4fe84f]' :
+               answerResult === 'incorrect' ? 'bg-[#e85c4f] text-[#ffffff] border-[#e85c4f]' :
                'bg-[#0f121a] text-[#a9b4cc] border-[#7e889c] hover:bg-[#121621]'}"
             onclick={() => handleAnswer(num)}
           >
@@ -124,12 +129,12 @@
     </div>
     <div class="flex flex-col items-center">
       <span class="text-[#7e889c] text-xs">Correct</span>
-      <span class="text-white text-lg font-bold">{state.correctCount}/{state.totalAnswers}</span>
+      <span class="text-white text-lg font-bold">{state.totalCorrect}/{state.totalAnswers}</span>
     </div>
     <div class="flex flex-col items-center">
       <span class="text-[#7e889c] text-xs">Accuracy</span>
       <span class="text-white text-lg font-bold">
-        {state.totalAnswers > 0 ? Math.round((state.correctCount / state.totalAnswers) * 100) : 0}%
+        {state.totalAnswers > 0 ? Math.round((state.totalCorrect / state.totalAnswers) * 100) : 0}%
       </span>
     </div>
   </div>
