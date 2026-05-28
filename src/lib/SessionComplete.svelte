@@ -2,181 +2,223 @@
   import type { Engine, GameState } from '$lib/engine';
   import { onMount } from 'svelte';
 
-  let { engine }: { engine: Engine } = $props();
+  let { engine, onHistory }: { engine: Engine; onHistory?: () => void } = $props();
   let state = $state<GameState>(engine.getState());
-  let chartCanvas: HTMLCanvasElement;
-  let intervalChartCanvas: HTMLCanvasElement;
-  let Chart: any;
+  let accuracyCanvas: HTMLCanvasElement;
+  let intervalCanvas: HTMLCanvasElement;
 
   $effect(() => {
     return engine.subscribe((s) => { state = s; });
   });
 
+  const session = $derived(state.history.length > 0 ? state.history[0] : null);
+
+  // Previous session for comparison
+  const prevSession = $derived(state.history.length > 1 ? state.history[1] : null);
+
+  function changePercent(current: number, previous: number): number {
+    if (!previous) return 0;
+    return Number(((current - previous) / previous).toFixed(2));
+  }
+
+  function formatInterval(ms: number): string {
+    if (!ms) return 'N/A';
+    const secs = ms / 1000;
+    const decimals = Number.isInteger(secs) ? 0 : secs < 1 ? 2 : 1;
+    return `${secs.toFixed(decimals)} SECOND${secs === 1 ? '' : 'S'}`;
+  }
+
+  const accuracy = $derived(session?.accuracy ?? 0);
+  const fastest = $derived(session?.fastestIntervalMs ?? 0);
+  const streaks = $derived(session?.streaks ?? 0);
+  const ending = $derived(session?.endingIntervalMs ?? 0);
+
+  // Compute changes from previous session
+  const accuracyChange = $derived(prevSession ? changePercent(accuracy, prevSession.accuracy) : 0);
+  const fastestChange = $derived(prevSession ? changePercent(fastest, prevSession.fastestIntervalMs) : 0);
+  const streaksChange = $derived(prevSession ? changePercent(streaks, prevSession.streaks) : 0);
+  const endingChange = $derived(prevSession ? changePercent(ending, prevSession.endingIntervalMs) : 0);
+
   onMount(async () => {
-    const chartModule = await import('chart.js/auto');
-    Chart = chartModule.default;
+    if (!accuracyCanvas || !intervalCanvas) return;
+    try {
+      const chartModule = await import('chart.js/auto');
+      const Chart = chartModule.default;
+      const fontFamily = "'DM Sans', sans-serif";
 
-    // Get the last session from history
-    const session = state.sessionHistory[0];
-    if (session && chartCanvas) {
-      renderAccuracyChart(session);
-    }
-    if (session && intervalChartCanvas) {
-      renderIntervalChart(session);
-    }
+      // Accuracy chart
+      const accuracyData = state.history.slice().reverse().map((s, i) => ({ x: i, y: Math.round(s.accuracy * 100) }));
+      new Chart(accuracyCanvas, {
+        type: 'line',
+        data: {
+          labels: accuracyData.map(d => ''),
+          datasets: [{ data: accuracyData.map(d => d.y), borderColor: '#4f79e8', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4, categoryPercentage: 1, barPercentage: 1 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: {
+            x: { display: false },
+            y: { min: 0, max: 100, ticks: { color: '#7e889c', font: { family: fontFamily, size: 12, weight: '500' }, stepSize: 25 }, grid: { color: '#121621' }, border: { display: false } }
+          },
+          elements: { line: { capBezierPoints: true } },
+          spanGaps: true
+        }
+      });
+
+      // Interval chart
+      const intervalData = state.history.slice().reverse().map((s, i) => ({ x: i, y: s.fastestIntervalMs }));
+      new Chart(intervalCanvas, {
+        type: 'line',
+        data: {
+          labels: intervalData.map(d => ''),
+          datasets: [{ data: intervalData.map(d => d.y), borderColor: '#4f79e8', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4, categoryPercentage: 1, barPercentage: 1 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: {
+            x: { display: false },
+            y: { ticks: { color: '#7e889c', font: { family: fontFamily, size: 12, weight: '500' }, callback: (v: any) => `${(v/1000).toFixed(1)}s` }, grid: { color: '#121621' }, border: { display: false } }
+          },
+          elements: { line: { capBezierPoints: true } },
+          spanGaps: true
+        }
+      });
+    } catch {}
   });
-
-  function renderAccuracyChart(session: any) {
-    if (!chartCanvas || !Chart) return;
-
-    // Create mock data points for the chart (accuracy trend over time)
-    const totalQuestions = session.totalAnswers;
-    const correctAnswers = session.correctCount;
-    const points = 20;
-    const labels = [];
-    const data = [];
-
-    for (let i = 0; i < points; i++) {
-      labels.push('');
-      // Simulate accuracy trend
-      const progress = (i + 1) / points;
-      const accuracy = Math.min(1, session.accuracy + (Math.random() - 0.5) * 0.2);
-      data.push(Math.round(accuracy * 100));
-    }
-
-    new Chart(chartCanvas, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          data,
-          borderColor: '#4f79e8',
-          borderWidth: 2,
-          pointRadius: 0,
-          fill: false,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { display: false },
-          y: {
-            min: 0,
-            max: 100,
-            ticks: { color: '#7e889c', font: { size: 10 } },
-            grid: { color: '#121621' }
-          }
-        }
-      }
-    });
-  }
-
-  function renderIntervalChart(session: any) {
-    if (!intervalChartCanvas || !Chart) return;
-
-    const points = 20;
-    const labels = [];
-    const data = [];
-
-    for (let i = 0; i < points; i++) {
-      labels.push('');
-      const progress = (i + 1) / points;
-      const interval = session.fastestIntervalMs + (session.fastestIntervalMs * 0.5) * (1 - progress) + Math.random() * 500;
-      data.push(Math.round(interval));
-    }
-
-    new Chart(intervalChartCanvas, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          data,
-          borderColor: '#4f79e8',
-          borderWidth: 2,
-          pointRadius: 0,
-          fill: false,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { display: false },
-          y: {
-            ticks: { color: '#7e889c', font: { size: 10 } },
-            grid: { color: '#121621' }
-          }
-        }
-      }
-    });
-  }
-
-  function formatTime(ms: number): string {
-    const secs = Math.floor(ms / 1000);
-    const msRemainder = ms % 1000;
-    if (secs === 0) return `${msRemainder}ms`;
-    return `${secs}.${Math.floor(msRemainder / 100)}s`;
-  }
 </script>
 
-<div class="fixed flex w-full h-full z-2 overflow-auto bg-[#090a0d]">
-  <div class="flex flex-col items-center w-full py-8 px-4 gap-8">
-    <h1 class="text-[#ffffff] text-3xl font-bold" style="line-height: 1.2;">SESSION COMPLETE</h1>
+<div class="flex grow flex-col">
+  <!-- Header row: "What a session!" + buttons -->
+  <div class="flex pt-12 pb-6 md:pb-0 justify-center md:justify-between gap-2 items-center w-full max-w-5xl">
+    <span class="hidden md:inline text-2xl text-white">What a session!</span>
+    <div class="flex gap-3">
+      <button class="cursor-pointer flex items-center gap-6 bg-[#0f121a] hover:bg-[#121621] py-3 px-8 rounded-full border border-[#273049]" onclick={() => onHistory?.()}>
+        <span class="text-[#a9b4cc] font-semibold">History</span>
+      </button>
+      <button class="cursor-pointer flex items-center gap-6 bg-[#4f79e8] hover:opacity-75 py-3 px-18 rounded-full border" onclick={() => engine.start()}>
+        <span class="text-[#090a0d] font-semibold">Start again</span>
+      </button>
+    </div>
+  </div>
 
-    {#if state.history.length > 0}
-      {@const session = state.history[0]}
-
-      <!-- Stats grid -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-[600px]">
-        <div class="bg-[#0f121a] rounded-xl p-4 flex flex-col items-center gap-1">
-          <span class="text-[#7e889c] text-xs">Accuracy</span>
-          <span class="text-[#4f79e8] text-2xl font-bold">{Math.round(session.accuracy * 100)}%</span>
+  {#if session}
+    <!-- Score cards -->
+    <div class="grid grid-cols-2 gap-4 max-w-5xl w-full">
+      <!-- Accuracy card -->
+      <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden">
+        <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
+          <span class="text-2xl text-[#a9b4cc] px-6">Accuracy</span>
+          <div class="flex gap-3 items-center">
+            <span class="text-[#ffffff] py-12 font-medium">{Math.round(accuracy * 100)}%</span>
+            {#if accuracyChange > 0}
+              <div class="flex gap-1 bg-[#4fe84f] p-1 rounded-md items-center mt-[-15px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0f121a" viewBox="0 0 256 256"><path d="M215.39,163.06A8,8,0,0,1,208,168H48a8,8,0,0,1-5.66-13.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,215.39,163.06Z"></path></svg>
+                <span class="text-xs text-[#0f121a] font-mono font-medium">{Math.abs(accuracyChange).toFixed(2)}</span>
+              </div>
+            {:else if accuracyChange < 0}
+              <div class="flex gap-1 bg-[#e85c4f] p-1 rounded-md items-center mb-[-15px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0f121a" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"></path></svg>
+                <span class="text-xs text-[#0f121a] font-mono font-medium">{Math.abs(accuracyChange).toFixed(2)}</span>
+              </div>
+            {/if}
+          </div>
         </div>
-
-        <div class="bg-[#0f121a] rounded-xl p-4 flex flex-col items-center gap-1">
-          <span class="text-[#7e889c] text-xs">Fastest Interval</span>
-          <span class="text-white text-2xl font-bold">{formatTime(session.fastestIntervalMs)}</span>
-        </div>
-
-        <div class="bg-[#0f121a] rounded-xl p-4 flex flex-col items-center gap-1">
-          <span class="text-[#7e889c] text-xs">Correct</span>
-          <span class="text-[#4fe84f] text-2xl font-bold">{session.correctCount}/{session.totalAnswers}</span>
-        </div>
-
-        <div class="bg-[#0f121a] rounded-xl p-4 flex flex-col items-center gap-1">
-          <span class="text-[#7e889c] text-xs">Streaks</span>
-          <span class="text-white text-2xl font-bold">{session.streaks}</span>
+        <div class="flex gap-6 bg-[#000000] p-6 justify-center">
+          <span class="text-xs text-[#7e889c] font-medium">Max accuracy</span>
+          <span class="text-xs text-[#ffffff] font-medium">{Math.round(accuracy * 100)}%</span>
         </div>
       </div>
 
+      <!-- Fastest Interval card -->
+      <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden">
+        <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
+          <span class="text-2xl text-[#a9b4cc] px-6">Fastest Interval</span>
+          <div class="flex gap-3 items-center">
+            <span class="text-[#ffffff] py-12 font-medium">{formatInterval(fastest)}</span>
+            {#if fastestChange > 0}
+              <div class="flex gap-1 bg-[#4fe84f] p-1 rounded-md items-center mt-[-15px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0f121a" viewBox="0 0 256 256"><path d="M215.39,163.06A8,8,0,0,1,208,168H48a8,8,0,0,1-5.66-13.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,215.39,163.06Z"></path></svg>
+                <span class="text-xs text-[#0f121a] font-mono font-medium">{Math.abs(fastestChange).toFixed(2)}</span>
+              </div>
+            {:else if fastestChange < 0}
+              <div class="flex gap-1 bg-[#e85c4f] p-1 rounded-md items-center mb-[-15px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0f121a" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"></path></svg>
+                <span class="text-xs text-[#0f121a] font-mono font-medium">{Math.abs(fastestChange).toFixed(2)}</span>
+              </div>
+            {/if}
+          </div>
+        </div>
+        <div class="flex gap-6 bg-[#000000] p-6 justify-center">
+          <span class="text-xs text-[#7e889c] font-medium">All-time best</span>
+          <span class="text-xs text-[#ffffff] font-medium">{formatInterval(fastest)}</span>
+        </div>
+      </div>
+
+      <!-- Streaks card -->
+      <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden">
+        <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
+          <span class="text-2xl text-[#a9b4cc] px-6">Streaks</span>
+          <div class="flex gap-3 items-center">
+            <span class="text-[#ffffff] py-12 font-medium">{streaks}</span>
+            {#if streaksChange > 0}
+              <div class="flex gap-1 bg-[#4fe84f] p-1 rounded-md items-center mt-[-15px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0f121a" viewBox="0 0 256 256"><path d="M215.39,163.06A8,8,0,0,1,208,168H48a8,8,0,0,1-5.66-13.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,215.39,163.06Z"></path></svg>
+                <span class="text-xs text-[#0f121a] font-mono font-medium">{Math.abs(streaksChange).toFixed(2)}</span>
+              </div>
+            {:else if streaksChange < 0}
+              <div class="flex gap-1 bg-[#e85c4f] p-1 rounded-md items-center mb-[-15px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0f121a" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,48,88H208a8,8,0,0,1,5.66,13.66Z"></path></svg>
+                <span class="text-xs text-[#0f121a] font-mono font-medium">{Math.abs(streaksChange).toFixed(2)}</span>
+              </div>
+            {/if}
+          </div>
+        </div>
+        <div class="flex gap-6 bg-[#000000] p-6 justify-center">
+          <span class="text-xs text-[#7e889c] font-medium">Most streaks</span>
+          <span class="text-xs text-[#ffffff] font-medium">{streaks}</span>
+        </div>
+      </div>
+
+      <!-- Ending Interval card -->
+      <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden">
+        <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
+          <span class="text-2xl text-[#a9b4cc] px-6">Ending Interval</span>
+          <div class="flex gap-3 items-center">
+            <span class="text-[#ffffff] py-12 font-medium">{formatInterval(ending)}</span>
+          </div>
+        </div>
+        <div class="flex gap-6 bg-[#000000] p-6 justify-center">
+          <span class="text-xs text-[#7e889c] font-medium">Starting</span>
+          <span class="text-xs text-[#ffffff] font-medium">{formatInterval(state.settings.startingInterval)}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts section -->
+    <div class="grid grid-cols-1 gap-4 max-w-5xl w-full mt-4">
       <!-- Accuracy chart -->
-      <div class="w-full max-w-[600px]">
-        <h3 class="text-[#a9b4cc] text-sm font-medium mb-3">Accuracy Over Time</h3>
-        <div class="bg-[#0f121a] rounded-xl p-4 h-[200px]">
-          <canvas bind:this={chartCanvas}></canvas>
+      <section class="rounded-[28px] bg-[#0f121a] p-5">
+        <span class="text-lg font-medium text-[#a9b4cc]">Accuracy</span>
+        <div class="mt-4 h-[200px] min-w-0">
+          <canvas bind:this={accuracyCanvas}></canvas>
         </div>
-      </div>
+      </section>
 
       <!-- Interval chart -->
-      <div class="w-full max-w-[600px]">
-        <h3 class="text-[#a9b4cc] text-sm font-medium mb-3">Fastest Interval Over Time</h3>
-        <div class="bg-[#0f121a] rounded-xl p-4 h-[200px]">
-          <canvas bind:this={intervalChartCanvas}></canvas>
+      <section class="rounded-[28px] bg-[#0f121a] p-5">
+        <span class="text-lg font-medium text-[#a9b4cc]">Fastest Interval</span>
+        <div class="mt-4 h-[200px] min-w-0">
+          <canvas bind:this={intervalCanvas}></canvas>
         </div>
-      </div>
-    {/if}
-
-    <!-- New session button -->
-    <button
-      class="bg-[#4f79e8] hover:opacity-75 py-4 px-8 rounded-full text-[#0f121a] font-semibold text-lg cursor-pointer transition-opacity"
-      onclick={() => engine.start()}
-    >
-      New session
-    </button>
-  </div>
+      </section>
+    </div>
+  {:else}
+    <!-- Empty state -->
+    <div class="rounded-[28px] bg-[#0f121a] p-8 text-center max-w-5xl w-full">
+      <span class="text-lg font-semibold text-white">No sessions yet</span>
+      <p class="mt-3 text-sm leading-6 text-[#7e889c]">Finish a session in this mode and the progress charts will show up here.</p>
+    </div>
+  {/if}
 </div>

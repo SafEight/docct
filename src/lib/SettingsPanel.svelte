@@ -1,81 +1,122 @@
 <script lang="ts">
   import type { Engine, GameState } from '$lib/engine';
 
-  let { engine, close }: { engine: Engine; close: () => void } = $props();
+  let { engine, close, mobileFloating = false }: { engine: Engine; close: () => void; mobileFloating?: boolean; showOnboarding?: () => void } = $props();
   let state = $state<GameState>(engine.getState());
 
   $effect(() => {
     return engine.subscribe((s) => { state = s; });
   });
 
-  function setTaskMode(mode: '1-back' | '2-back' | 'variable') {
-    engine.updateSettings({ taskMode: mode });
-  }
-
-  function setVoicePack(pack: 'rose' | 'rose_fast' | 'jenny') {
-    engine.updateSettings({ voicePack: pack });
-  }
-
-  function toggleBeep() {
-    engine.updateSettings({ beepOnIncorrect: !state.settings.beepOnIncorrect });
-  }
+  // Click-outside handler
+  let wrapperEl: HTMLElement;
+  $effect(() => {
+    if (!wrapperEl) return;
+    const timer = setTimeout(() => {
+      const handler = (e: MouseEvent) => {
+        if (!wrapperEl.contains(e.target as Node)) {
+          close();
+        }
+      };
+      document.addEventListener('click', handler);
+      return () => document.removeEventListener('click', handler);
+    });
+    return () => clearTimeout(timer);
+  });
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="absolute right-0 top-[42px] w-[220px] bg-[#0f121a] rounded-xl border border-[#a9b4cc] shadow-2xl z-50 overflow-hidden" onclick={(e) => e.stopPropagation()}>
-  <div class="p-4 flex flex-col gap-4">
-    <!-- Close button -->
-    <button class="absolute top-3 right-3 text-[#7e889c] hover:text-white cursor-pointer" aria-label="Close settings" onclick={close}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M18.3 5.71a1 1 0 0 0-1.42 0L12 10.59 7.12 5.71A1 1 0 0 0 5.7 7.12L10.59 12l-4.88 4.88a1 1 0 0 0 1.42 1.42L12 13.41l4.88 4.88a1 1 0 0 0 1.42-1.42L13.41 12l4.88-4.88a1 1 0 0 0 0-1.41z"/>
-      </svg>
+<div
+  bind:this={wrapperEl}
+  class="z-20 {mobileFloating ? 'fixed bottom-20 left-4 right-4 md:absolute md:bottom-auto md:left-auto md:right-0 md:top-[42px] md:w-[220px]' : 'absolute right-0 top-[42px] w-[220px]'}"
+>
+  <div class="rounded-md bg-[#a9b4cc] p-1 shadow-2xl">
+    <!-- Task mode: Regular (1-back) -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.taskMode === '1-back' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ taskMode: '1-back' })}>
+      <span class="font-medium {state.settings.taskMode === '1-back' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Regular</span>
+      {#if state.settings.taskMode === '1-back'}
+        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
     </button>
 
-    <!-- Task mode -->
-    <div class="flex flex-col gap-2">
-      <span class="text-[#7e889c] text-xs font-medium tracking-wider">TASK MODE</span>
-      <div class="flex gap-1">
-        {#each ['1-back', '2-back', 'variable'] as mode}
-          <button
-            class="flex-1 py-2 px-2 rounded-md text-xs font-medium cursor-pointer transition-colors
-              {state.settings.taskMode === mode
-                ? mode === '1-back' ? 'bg-[#3d4f82] text-[#8fb2ff]' :
-                  mode === '2-back' ? 'bg-[#2f6a57] text-[#74d8b3]' :
-                  'bg-[#7c6230] text-[#d5b15e]'
-                : 'bg-[#121621] text-[#7e889c] hover:bg-[#0f121a]'}"
-            onclick={() => setTaskMode(mode as any)}
-          >
-            {mode}
-          </button>
-        {/each}
-      </div>
+    <!-- Task mode: 2-back -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.taskMode === '2-back' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ taskMode: '2-back' })}>
+      <span class="font-medium {state.settings.taskMode === '2-back' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">2-back</span>
+      {#if state.settings.taskMode === '2-back'}
+        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
+
+    <!-- Task mode: Variable -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.taskMode === 'variable' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ taskMode: 'variable' })}>
+      <span class="font-medium {state.settings.taskMode === 'variable' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Variable</span>
+      {#if state.settings.taskMode === 'variable'}
+        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
+
+    <div class="my-1 h-px bg-[#7e889c]"></div>
+
+    <!-- Voice label -->
+    <div class="px-3 py-2">
+      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Voice</span>
     </div>
 
-    <!-- Voice pack -->
-    <div class="flex flex-col gap-2">
-      <span class="text-[#7e889c] text-xs font-medium tracking-wider">VOICE PACK</span>
-      <div class="flex flex-col gap-1">
-        {#each [{ id: 'rose' as const, label: 'Rose' }, { id: 'rose_fast' as const, label: 'Rose Fast' }, { id: 'jenny' as const, label: 'Jenny' }] as pack}
-          <button
-            class="w-full py-2 px-3 rounded-md text-sm text-left cursor-pointer transition-colors
-              {state.settings.voicePack === pack.id ? 'bg-[#4f79e8] text-[#0f121a]' : 'bg-[#121621] text-[#a9b4cc] hover:bg-[#0f121a]'}"
-            onclick={() => setVoicePack(pack.id)}
-          >
-            {pack.label}
-          </button>
-        {/each}
-      </div>
-    </div>
+    <!-- Voice: Rose -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.voicePack === 'rose' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ voicePack: 'rose' })}>
+      <span class="font-medium {state.settings.voicePack === 'rose' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Rose</span>
+      {#if state.settings.voicePack === 'rose'}
+        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
+
+    <!-- Voice: Rose Fast -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.voicePack === 'rose_fast' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ voicePack: 'rose_fast' })}>
+      <span class="font-medium {state.settings.voicePack === 'rose_fast' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Rose Fast</span>
+      {#if state.settings.voicePack === 'rose_fast'}
+        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
+
+    <!-- Voice: Jenny -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.voicePack === 'jenny' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ voicePack: 'jenny' })}>
+      <span class="font-medium {state.settings.voicePack === 'jenny' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Jenny</span>
+      {#if state.settings.voicePack === 'jenny'}
+        <span class="text-sm font-semibold text-[#4f79e8]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
+
+    <div class="my-1 h-px bg-[#7e889c]"></div>
 
     <!-- Beep toggle -->
-    <div class="flex items-center justify-between">
-      <span class="text-[#a9b4cc] text-sm">Beep on wrong answer</span>
-      <button aria-label="Toggle beep on wrong answer"
-        class="w-10 h-5 rounded-full relative cursor-pointer transition-colors {state.settings.beepOnIncorrect ? 'bg-[#4f79e8]' : 'bg-[#7e889c]'}"
-        onclick={toggleBeep}
-      >
-        <div class="absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform {state.settings.beepOnIncorrect ? 'translate-x-5' : 'translate-x-0.5'}"></div>
-      </button>
-    </div>
+    <button class="group flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000]" onclick={() => engine.updateSettings({ beepOnIncorrect: !state.settings.beepOnIncorrect })}>
+      <span class="font-medium text-[#090a0d] group-hover:text-[#a9b4cc]">Beep on wrong answer</span>
+      <span class="text-sm font-semibold {state.settings.beepOnIncorrect ? 'text-[#4f79e8]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">{state.settings.beepOnIncorrect ? 'On' : 'Off'}</span>
+    </button>
+
+    <div class="my-1 h-px bg-[#7e889c]"></div>
+
+    <!-- View instructions -->
+    <button class="group flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000]" onclick={() => { engine.completeOnboarding(); close(); }}>
+      <span class="font-medium text-[#090a0d] group-hover:text-[#a9b4cc]">View instructions</span>
+      <span class="text-[#090a0d] group-hover:text-[#a9b4cc]">&rsaquo;</span>
+    </button>
+
+    <!-- Close (mobile only) -->
+    <button class="group mt-1 flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000] md:hidden" onclick={close}>
+      <span class="font-medium text-[#090a0d] group-hover:text-[#a9b4cc]">Close</span>
+    </button>
   </div>
 </div>
