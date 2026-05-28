@@ -4,9 +4,9 @@
   let { engine }: { engine: Engine } = $props();
 </script>
 
-<div class="fixed inset-0 z-20 overflow-y-auto bg-black/80 p-4 md:flex md:items-center md:justify-center md:p-6">
-  <div class="flex min-h-full flex-col justify-center md:min-h-0 md:w-full md:max-w-[800px]">
-    <div class="flex flex-col gap-6 rounded-[24px] bg-[#090a0d] p-5 sm:p-6 md:gap-8 md:p-8">
+<div class="fixed inset-0 z-20 overflow-y-auto bg-black/75 p-4 md:flex md:items-center md:justify-center md:p-6">
+  <div class="flex min-h-full flex-col justify-center md:min-h-0 md:w-full md:max-w-5xl">
+    <div class="flex flex-col gap-6 rounded-[28px] bg-[#090a0d] p-5 sm:p-6 md:gap-8 md:p-8">
       <span class="text-2xl leading-[1.2] text-white sm:text-3xl md:text-4xl">
         This is an exercise that targets cognitive control, the brain's ability to regulate attention, impulses, and emotions.
       </span>

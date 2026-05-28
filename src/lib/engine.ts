@@ -102,11 +102,17 @@ function loadSettingsFromStorage(): GameSettings {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      // Type coercion matching original
       return {
-        ...DEFAULT_SETTINGS,
-        ...parsed,
+        timer: Number(parsed.timer) || DEFAULT_SETTINGS.timer,
+        useVoice: !!parsed.useVoice,
+        useKeypad: !!parsed.useKeypad,
+        voicePack: ['rose', 'rose_fast', 'jenny'].includes(parsed.voicePack) ? String(parsed.voicePack) : DEFAULT_SETTINGS.voicePack,
+        beepOnIncorrect: !!parsed.beepOnIncorrect,
+        startingInterval: Number(parsed.startingInterval) || DEFAULT_SETTINGS.startingInterval,
+        minimumInterval: Number(parsed.minimumInterval) || DEFAULT_SETTINGS.minimumInterval,
+        onboardingCompleted: !!parsed.onboardingCompleted,
         taskMode: ['1-back', '2-back', 'variable'].includes(parsed.taskMode) ? parsed.taskMode : DEFAULT_SETTINGS.taskMode,
-        voicePack: ['rose', 'rose_fast', 'jenny'].includes(parsed.voicePack) ? parsed.voicePack : DEFAULT_SETTINGS.voicePack,
       };
     }
   } catch { /* ignore */ }
@@ -118,18 +124,58 @@ function saveSettingsToStorage(settings: GameSettings): void {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* ignore */ }
 }
 
+function validateSessionResult(entry: any): SessionResult | null {
+  if (!entry || typeof entry !== 'object') return null;
+  const mode = entry.mode === '2-back' || entry.mode === 'variable' ? entry.mode : '1-back';
+  const completedAt = String(entry.completedAt || '');
+  const durationSec = Number(entry.durationSec);
+  const accuracy = Number(entry.accuracy);
+  const fastestIntervalMs = Number(entry.fastestIntervalMs);
+  const endingIntervalMs = Number(entry.endingIntervalMs);
+  const streaks = Number(entry.streaks);
+  if (!completedAt || !Number.isFinite(durationSec) || !Number.isFinite(accuracy) ||
+      !Number.isFinite(fastestIntervalMs) || !Number.isFinite(endingIntervalMs) || !Number.isFinite(streaks)) {
+    return null;
+  }
+  return {
+    completedAt, mode, durationSec, accuracy, fastestIntervalMs, endingIntervalMs, streaks,
+    useVoice: !!entry.useVoice, useKeypad: !!entry.useKeypad,
+    averageResponseTimeMs: Number(entry.averageResponseTimeMs) || 0,
+    correctCount: Number(entry.correctCount) || 0,
+    totalAnswers: Number(entry.totalAnswers) || 0,
+  };
+}
+
 function loadHistoryFromStorage(): SessionResult[] {
   if (typeof localStorage === 'undefined') return [];
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(validateSessionResult).filter(Boolean) as SessionResult[];
+    }
   } catch { /* ignore */ }
   return [];
 }
 
 function saveHistoryToStorage(history: SessionResult[]): void {
   if (typeof localStorage === 'undefined') return;
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e: any) {
+    // QuotaExceeded handling: drop oldest entries until write succeeds
+    if (e?.name === 'QuotaExceededError') {
+      const remaining = [...history];
+      while (remaining.length > 0) {
+        remaining.shift();
+        try {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(remaining));
+          return;
+        } catch { /* keep trying */ }
+      }
+    }
+  }
 }
 
 interface HighScores {
@@ -229,10 +275,24 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   let beepBuffer: AudioBuffer | null = null;
   let loadedVoicePack: string = '';
   let audioPlayingId = 0;     // monotonic ID to track which audio is current
+  let preloadVersion = 0;     // monotonic ID for voice pack preload race condition
 
   function getAudioContext(): AudioContext {
     if (!audioContext) {
       audioContext = new AudioContext();
+      // iOS keepalive: GainNode + ConstantSource prevents AudioContext suspension
+      try {
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0;
+        const constantSource = audioContext.createConstantSource();
+        constantSource.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        constantSource.start();
+      } catch { /* ignore */ }
+    }
+    // Resume if suspended (autoplay policy)
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
     }
     return audioContext;
   }
@@ -243,8 +303,12 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     
     if (loadedVoicePack === packName && voiceBuffers.every(b => b !== null)) return;
     
+    // Race condition guard: increment version, only apply if still current
+    const myVersion = ++preloadVersion;
+    
     const buffers: (AudioBuffer | null)[] = [];
     for (let i = 1; i <= 9; i++) {
+      if (preloadVersion !== myVersion) return; // newer preload started, abort
       try {
         const response = await fetch(`${basePath}/${i}.wav`);
         const arrayBuffer = await response.arrayBuffer();
@@ -254,8 +318,11 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
         buffers.push(null);
       }
     }
-    voiceBuffers = buffers;
-    loadedVoicePack = packName;
+    // Only apply if no newer preload started
+    if (preloadVersion === myVersion) {
+      voiceBuffers = buffers;
+      loadedVoicePack = packName;
+    }
   }
 
   async function preloadBeep(): Promise<void> {
@@ -276,7 +343,6 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(ctx.destination);
-    source.onended = () => { source.disconnect(); };
     source.start(0);
     return buffer.duration * 1000; // return duration in ms
   }
@@ -288,7 +354,6 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     const source = ctx.createBufferSource();
     source.buffer = beepBuffer;
     source.connect(ctx.destination);
-    source.onended = () => { source.disconnect(); };
     source.start(0);
   }
 

@@ -16,20 +16,41 @@
     engine.submitAnswer(answer);
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (state.phase !== 'active' || !state.canAnswer) return;
-    const num = parseInt(e.key);
-    if (num >= 2 && num <= 18) {
-      keyValue = e.key;
-      engine.submitAnswer(num);
-    } else if (e.key === 'Enter') {
-      // Submit current value if any
-      const num = parseInt(keyValue);
+  function handleInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    // Strip non-digits, limit to 2 chars
+    let raw = input.value.replace(/\D/g, '').slice(0, 2);
+    // Clamp 0-99
+    if (raw !== '') {
+      const num = parseInt(raw);
+      if (num > 99) raw = '99';
+    }
+    keyValue = raw;
+    // Auto-submit if valid 2-digit range
+    if (raw !== '' && state.canAnswer) {
+      const num = parseInt(raw);
       if (num >= 2 && num <= 18) {
         engine.submitAnswer(num);
       }
-      keyValue = '';
     }
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      return; // Enter does nothing in original
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      keyValue = '';
+      const input = e.target as HTMLInputElement;
+      if (input) input.value = '';
+      return;
+    }
+  }
+
+  function resetInput() {
+    keyValue = '';
   }
 
   const isPaused = $derived(state.phase === 'paused');
@@ -174,6 +195,7 @@
           disabled={isPaused || !state.canAnswer}
           placeholder={statusText}
           value={keyValue}
+          oninput={handleInput}
           onkeydown={handleKeydown}
         />
       </div>

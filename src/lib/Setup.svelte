@@ -40,10 +40,10 @@
       <div class="flex flex-col items-start gap-6">
         <span class="text-sm text-[#7e889c]">STARTING INTERVAL</span>
         <div class="flex overflow-hidden rounded-xl">
-          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.startingInterval / 1000).toFixed(1)} onchange={(e) => handleStartingInterval(parseFloat((e.target as HTMLInputElement).value))} />
+          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.startingInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleStartingInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
           <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
             {#each [0.5, 1, 2, 3, 5] as preset}
-              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onclick={() => handleStartingInterval(preset)}>
+              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleStartingInterval(preset)}>
                 <span class="#0f121a text-sm font-bold">{preset}</span>
               </button>
             {/each}
@@ -55,10 +55,10 @@
       <div class="flex flex-col items-start gap-6">
         <span class="text-sm text-[#7e889c]">MINIMUM INTERVAL</span>
         <div class="flex overflow-hidden rounded-xl">
-          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.minimumInterval / 1000).toFixed(1)} onchange={(e) => handleMinimumInterval(parseFloat((e.target as HTMLInputElement).value))} />
+          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.minimumInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleMinimumInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
           <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
             {#each [0.5, 1, 2, 3, 5] as preset}
-              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onclick={() => handleMinimumInterval(preset)}>
+              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleMinimumInterval(preset)}>
                 <span class="#0f121a text-sm font-bold">{preset}</span>
               </button>
             {/each}

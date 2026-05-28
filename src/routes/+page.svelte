@@ -36,7 +36,7 @@
   {/if}
 
   <!-- Main layout (direct child of root) -->
-  <div class="flex flex-col grow md:px-6 md:items-center">
+  <div class="flex flex-col grow md:px-6 md:items-center {isActive ? 'select-none' : ''}">
     <!-- Header bar -->
     <div class="md:flex md:py-6 justify-between gap-2 w-full max-w-7xl">
       <!-- Left side: timer -->
@@ -62,7 +62,7 @@
             <button class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { digitDropdownOpen = !digitDropdownOpen; answerDropdownOpen = false; }}>
               <span class="text-[#7e889c]">DIGIT</span>
               <div class="flex items-center gap-1">
-                <span class="text-[#a9b4cc] font-medium">{state.settings.useVoice ? 'Voice' : 'Visual'}</span>
+                <span class="text-[#a9b4cc] font-medium">{state.settings.useVoice ? 'Voice' : 'Text'}</span>
                 <svg class="{digitDropdownOpen ? 'rotate-[-90deg] transition-rotate duration-[0.1s]' : ''}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" height="20" width="20"><g><path fill="#4f79e8" d="M11.2929 8H5.5703c-0.52841 0 -0.77161 0.79094 -0.3704 1.20467l2.40658 2.48173L11.2929 8Z" stroke-width="1"></path><path fill="#a9b4cc" d="m8.30273 12.4044 3.32687 3.4307c0.2132 0.2198 0.5277 0.2198 0.7408 0l6.4297 -6.63043C19.2013 8.79094 18.9581 8 18.4297 8h-5.7226l-4.40437 4.4044Z" stroke-width="1"></path></g></svg>
               </div>
             </button>
