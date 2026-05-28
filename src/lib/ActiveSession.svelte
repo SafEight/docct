@@ -11,6 +11,18 @@
   let selectedButton = $state<number | null>(null);
   let keyValue = $state('');
   let swipeActive = $state(false);
+  let progressCircle: SVGCircleElement | undefined = $state();
+
+  // Force CSS animation restart on every new digit
+  $effect(() => {
+    state.digitHistory.length;
+    const el = progressCircle;
+    if (el) {
+      el.style.animation = 'none';
+      el.getBBox(); // force synchronous reflow (recalc SVG layout)
+      el.style.animation = '';
+    }
+  });
 
   function handleKeypad(answer: number) {
     selectedButton = answer;
@@ -173,25 +185,24 @@
                   {/if}
                 {:else if state.currentDigit !== null}
                   <!-- Text/visual mode: digit with SVG progress ring -->
-                  {#key state.digitHistory.length}
-                    <div class="relative">
-                      <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
-                      <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="72" height="72" viewBox="0 0 72 72">
-                        <circle cx="36" cy="36" r="32" fill="none" stroke="#1a1f2e" stroke-width="4" />
-                        <circle
-                          cx="36" cy="36" r="32"
-                          fill="none"
-                          stroke="#10b981"
-                          stroke-width="4"
-                          stroke-linecap="round"
-                          stroke-dasharray="201"
-                          stroke-dashoffset="201"
-                          class="progress-ring"
-                          style="animation-duration: {state.currentInterval}ms;"
-                        />
-                      </svg>
-                    </div>
-                  {/key}
+                  <div class="relative">
+                    <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
+                    <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="72" height="72" viewBox="0 0 72 72">
+                      <circle cx="36" cy="36" r="32" fill="none" stroke="#1a1f2e" stroke-width="4" />
+                      <circle
+                        cx="36" cy="36" r="32"
+                        fill="none"
+                        stroke="#10b981"
+                        stroke-width="4"
+                        stroke-linecap="round"
+                        stroke-dasharray="201"
+                        stroke-dashoffset="201"
+                        class="progress-ring"
+                        style="animation-duration: {state.currentInterval}ms;"
+                        bind:this={progressCircle}
+                      />
+                    </svg>
+                  </div>
                 {/if}
               </div>
               <button data-answer="2" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 2 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(2, e)} onclick={() => handleKeypad(2)}><span class="select-none text-[#10b981] text-4xl font-extrabold">2</span></button>
