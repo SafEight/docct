@@ -11,15 +11,7 @@
   let selectedButton = $state<number | null>(null);
   let keyValue = $state('');
   let swipeActive = $state(false);
-  let ringToken = $state(0);
   let lastTouchEndTime = $state(0);
-
-  $effect(() => {
-    // track digit history — always changes when a new digit fires
-    state.digitHistory.length;
-    // bump the token to force {#key} to recreate the SVG
-    ringToken++;
-  });
 
   /** Find the nearest keypad button under a touch point */
   function buttonFromTouch(touch: Touch): number | null {
@@ -199,7 +191,7 @@
                   {/if}
                 {:else if state.currentDigit !== null}
                   <!-- Text/visual mode: digit with SVG progress ring -->
-                  {#key ringToken}
+                  {#key state.digitHistory.length}
                     <div class="relative">
                       <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
                       <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="72" height="72" viewBox="0 0 72 72">

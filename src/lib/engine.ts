@@ -435,6 +435,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     // If no answer submitted, it's wrong
     if (pendingAnswer === undefined) {
+      lastAnswerCorrect = false;
       recordIncorrect();
       if (settings.beepOnIncorrect) playBeepSound();
       return;
