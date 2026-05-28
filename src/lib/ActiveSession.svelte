@@ -34,6 +34,16 @@
     return parseInt(btn.dataset.answer!);
   }
 
+  /** Container touch handler: only for swipe-in (touch starts outside any button) */
+  function handleContainerTouchStart(e: TouchEvent) {
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (el && el.closest('[data-answer]')) return; // button will handle its own touchstart
+    e.preventDefault();
+    swipeActive = true;
+    selectedButton = null;
+  }
+
   function handleKeypadTouchStart(answer: number, e: TouchEvent) {
     e.preventDefault();
     swipeActive = true;
@@ -163,7 +173,7 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="flex justify-center"
-        ontouchstart={handleKeypadTouchStart.bind(null, selectedButton ?? 0)}
+        ontouchstart={handleContainerTouchStart}
         ontouchmove={handleKeypadTouchMove}
         ontouchend={handleKeypadTouchEnd}
       >
