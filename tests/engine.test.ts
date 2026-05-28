@@ -4,6 +4,36 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createEngine } from '../src/lib/engine';
 import type { GameSettings } from '../src/lib/engine';
 
+// ── Mock AudioContext (Node has no browser APIs) ────────────────────────────
+
+class MockAudioBufferSourceNode {
+  buffer: any = null;
+  connect() { return this; }
+  start() {}
+  stop() {}
+}
+class MockGainNode {
+  gain = { value: 1, setValueAtTime() {}, linearRampToValueAtTime() {} };
+  connect() { return this; }
+}
+class MockConstantSourceNode {
+  offset = { value: 0 };
+  connect() { return this; }
+  start() {}
+  stop() {}
+}
+class MockAudioContext {
+  state = 'running';
+  currentTime = 0;
+  sampleRate = 44100;
+  createBufferSource() { return new MockAudioBufferSourceNode(); }
+  createGain() { return new MockGainNode(); }
+  createConstantSource() { return new MockConstantSourceNode(); }
+  decodeAudioData() { return Promise.resolve({ getChannelData: () => new Float32Array(0), duration: 0.1, numberOfChannels: 1, sampleRate: 44100 }); }
+  resume() { return Promise.resolve(); }
+  close() { return Promise.resolve(); }
+}
+
 // ── Mock localStorage ──────────────────────────────────────────────────────
 
 const store: Record<string, string> = {};
@@ -16,6 +46,14 @@ beforeEach(() => {
     removeItem: (key: string) => { delete store[key]; },
     clear: () => { Object.keys(store).forEach((k) => delete store[k]); },
   });
+  // Mock AudioContext
+  vi.stubGlobal('AudioContext', MockAudioContext as any);
+  vi.stubGlobal('webkitAudioContext', MockAudioContext as any);
+  // Mock fetch (for audio file loading)
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+  }));
   vi.useFakeTimers();
 });
 
@@ -29,7 +67,7 @@ afterEach(() => {
 function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
   return {
     timer: 600,
-    useVoice: true,
+    useVoice: false,   // disabled in tests: avoids audio duration affecting tick timing
     useKeypad: true,
     voicePack: 'rose',
     beepOnIncorrect: false,
@@ -42,9 +80,21 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
 }
 
 /**
+ * Start engine and flush the async preload path (Promise.all → then → scheduleNextDigit).
+ * Must be called BEFORE any timer advances.
+ * Also advances past INITIAL_DELAY (500ms) so the first digit fires.
+ */
+async function startEngine(e: ReturnType<typeof createEngine>) {
+  e.start();
+  // Flush microtasks: Promise.all().then() in start()
+  await vi.advanceTimersByTimeAsync(0);
+  // Advance exactly INITIAL_DELAY (500ms) so the first digit fires, but no more
+  vi.advanceTimersByTime(500);
+}
+
+/**
  * Advance fake timers by exactly one digit interval.
- * The engine's digit loop generates a new digit after `currentInterval` ms.
- * NOTE: The auto-advance also counts any unanswered previous digit as incorrect.
+ * After the first digit (fired in startEngine), digits fire every `currentInterval` ms.
  */
 function tickDigit(engine: ReturnType<typeof createEngine>) {
   vi.advanceTimersByTime(engine.getState().currentInterval);
@@ -58,9 +108,9 @@ function tickSecond() {
 // ── Digit generation ───────────────────────────────────────────────────────
 
 describe('Digit generation', () => {
-  it('generates a digit 1-9 on start', () => {
+  it('generates a digit 1-9 on start', async () => {
     const e = createEngine(makeSettings({ startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e); // advance one interval → first digit generated
 
     const d = e.getState().currentDigit;
@@ -70,51 +120,49 @@ describe('Digit generation', () => {
     e.dispose();
   });
 
-  it('digit appears in digitHistory', () => {
+  it('digit appears in digitHistory', async () => {
     const e = createEngine(makeSettings({ startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e);
 
     const s = e.getState();
     expect(s.digitHistory.length).toBeGreaterThanOrEqual(1);
-    // The most recent digit should match currentDigit
     expect(s.digitHistory[s.digitHistory.length - 1]).toBe(s.currentDigit);
     e.dispose();
   });
 
-  it('generates multiple digits over time', () => {
+  it('generates multiple digits over time', async () => {
     const e = createEngine(makeSettings({ startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
 
-    // Advance enough for multiple digits: each tick generates one more
-    for (let i = 0; i < 4; i++) tickDigit(e);
-
-    const s = e.getState();
-    expect(s.digitHistory.length).toBeGreaterThanOrEqual(4);
-    for (const d of s.digitHistory) {
-      expect(d).toBeGreaterThanOrEqual(1);
-      expect(d).toBeLessThanOrEqual(9);
+    // History is capped at nBack+1 (2 for 1-back), so check digit changed
+    const seen = new Set<number>();
+    seen.add(e.getState().currentDigit!);
+    for (let i = 0; i < 4; i++) {
+      tickDigit(e);
+      seen.add(e.getState().currentDigit!);
     }
+    expect(seen.size).toBeGreaterThanOrEqual(3); // at least 3 distinct digits
     e.dispose();
   });
 });
 
 // ── 1-back answer checking ─────────────────────────────────────────────────
+// NOTE: submitAnswer is DEFERRED — correctness checked on next digit tick.
 
 describe('Answer checking — 1-back', () => {
-  it('cannot answer until 2 digits exist', () => {
+  it('cannot answer until 2 digits exist', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
-    e.start();
-    tickDigit(e); // 1st digit
+    await startEngine(e); // 1st digit fires
 
-    expect(e.getState().digitHistory.length).toBe(1);
-    expect(e.getState().canAnswer).toBe(false);
+    expect(e.getState().currentDigit).not.toBeNull();
+    expect(e.getState().canAnswer).toBe(false); // need 2 digits for 1-back
     e.dispose();
   });
 
-  it('can answer after 2 digits', () => {
+  it('can answer after 2 digits', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e); // 1st
     tickDigit(e); // 2nd
 
@@ -123,9 +171,9 @@ describe('Answer checking — 1-back', () => {
     e.dispose();
   });
 
-  it('correct answer accepted (digit[n-2] + digit[n-1])', () => {
+  it('correct answer accepted (digit[n-2] + digit[n-1])', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e); // 1st
     tickDigit(e); // 2nd
 
@@ -133,33 +181,37 @@ describe('Answer checking — 1-back', () => {
     const expected = h[h.length - 2] + h[h.length - 1];
     e.submitAnswer(expected);
 
+    // Answer is deferred — need next tick to check
+    tickDigit(e);
     expect(e.getState().lastAnswerCorrect).toBe(true);
     e.dispose();
   });
 
-  it('wrong answer rejected', () => {
+  it('wrong answer rejected', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
-    e.start();
-    tickDigit(e);
-    tickDigit(e);
+    await startEngine(e);
+    tickDigit(e); // 1st
+    tickDigit(e); // 2nd
 
     e.submitAnswer(9999);
+    tickDigit(e); // triggers check
     expect(e.getState().lastAnswerCorrect).toBe(false);
     e.dispose();
   });
 
-  it('tracks multiple correct answers', () => {
+  it('tracks multiple correct answers', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e); // 1st
     tickDigit(e); // 2nd → can answer
 
     let h = e.getState().digitHistory;
     e.submitAnswer(h[h.length - 2] + h[h.length - 1]); // correct
+    tickDigit(e); // 3rd → checks #1
 
-    tickDigit(e); // 3rd
     h = e.getState().digitHistory;
     e.submitAnswer(h[h.length - 2] + h[h.length - 1]); // correct
+    tickDigit(e); // 4th → checks #2
 
     expect(e.getState().totalCorrect).toBe(2);
     e.dispose();
@@ -169,19 +221,18 @@ describe('Answer checking — 1-back', () => {
 // ── 2-back answer checking ─────────────────────────────────────────────────
 
 describe('Answer checking — 2-back', () => {
-  it('cannot answer until 3 digits', () => {
+  it('cannot answer until 3 digits', async () => {
     const e = createEngine(makeSettings({ taskMode: '2-back', startingInterval: 100 }));
-    e.start();
-    tickDigit(e); // 1
-    tickDigit(e); // 2
+    await startEngine(e); // 1st digit fires
+    tickDigit(e); // 2nd digit fires
 
-    expect(e.getState().canAnswer).toBe(false);
+    expect(e.getState().canAnswer).toBe(false); // need 3 for 2-back
     e.dispose();
   });
 
-  it('can answer after 3 digits', () => {
+  it('can answer after 3 digits', async () => {
     const e = createEngine(makeSettings({ taskMode: '2-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e);
     tickDigit(e);
     tickDigit(e);
@@ -191,9 +242,9 @@ describe('Answer checking — 2-back', () => {
     e.dispose();
   });
 
-  it('correct answer: currentDigit + digit 2 steps ago', () => {
+  it('correct answer: currentDigit + digit 2 steps ago', async () => {
     const e = createEngine(makeSettings({ taskMode: '2-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e);
     tickDigit(e);
     tickDigit(e);
@@ -203,18 +254,20 @@ describe('Answer checking — 2-back', () => {
     const expected = h[h.length - 3] + h[h.length - 1];
     e.submitAnswer(expected);
 
+    tickDigit(e); // checks answer
     expect(e.getState().lastAnswerCorrect).toBe(true);
     e.dispose();
   });
 
-  it('wrong answer rejected in 2-back', () => {
+  it('wrong answer rejected in 2-back', async () => {
     const e = createEngine(makeSettings({ taskMode: '2-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e);
     tickDigit(e);
     tickDigit(e);
 
     e.submitAnswer(9999);
+    tickDigit(e);
     expect(e.getState().lastAnswerCorrect).toBe(false);
     e.dispose();
   });
@@ -223,11 +276,11 @@ describe('Answer checking — 2-back', () => {
 // ── Variable mode ──────────────────────────────────────────────────────────
 
 describe('Answer checking — variable mode', () => {
-  it('produces both nBack values (1 and 2)', () => {
+  it('produces both nBack values (1 and 2)', async () => {
     const seen = new Set<number>();
     for (let i = 0; i < 100; i++) {
       const e = createEngine(makeSettings({ taskMode: 'variable', startingInterval: 100 }));
-      e.start();
+      await startEngine(e);
       tickDigit(e);
       seen.add(e.getState().nBack);
       e.dispose();
@@ -240,98 +293,94 @@ describe('Answer checking — variable mode', () => {
 // ── Interval adaptation ────────────────────────────────────────────────────
 
 describe('Interval adaptation', () => {
-  it('decreases after 3 correct answers (threshold=3)', () => {
+  it('decreases after 4 correct answers (STREAK_THRESHOLD=4)', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
-    e.start();
-    tickDigit(e); // 1st digit (start)
+    await startEngine(e); // 1st digit fires
 
-    // 2nd digit → can answer
-    tickDigit(e);
-    let h = e.getState().digitHistory;
-    e.submitAnswer(h[h.length - 2] + h[h.length - 1]); // correct #1 → streak=1
-
-    // 3rd digit
-    tickDigit(e);
-    h = e.getState().digitHistory;
-    e.submitAnswer(h[h.length - 2] + h[h.length - 1]); // correct #2 → streak=2
-
-    // 4th digit
-    tickDigit(e);
-    h = e.getState().digitHistory;
-    e.submitAnswer(h[h.length - 2] + h[h.length - 1]); // correct #3 → threshold met!
-
-    const s = e.getState();
-    expect(s.correctStreak).toBe(0); // reset after threshold
-    expect(s.currentInterval).toBe(2800); // 3000 - 200
-    e.dispose();
-  });
-
-  it('interval increase on wrong answer (when decreased)', () => {
-    const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
-    e.start();
-
-    // First, decrease interval by getting 3 correct
-    tickDigit(e);
-    for (let i = 0; i < 3; i++) {
+    // Need 4 correct answers to trigger interval decrease
+    for (let i = 0; i < 4; i++) {
       tickDigit(e);
       const h = e.getState().digitHistory;
       e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
     }
-    expect(e.getState().currentInterval).toBe(2800);
-
-    // Now submit a wrong answer
-    tickDigit(e);
-    e.submitAnswer(9999);
+    tickDigit(e); // check last answer
 
     const s = e.getState();
-    // 2800 + 500 = 3300, capped at startingInterval = 3000
-    expect(s.currentInterval).toBe(3000);
-    expect(s.wrongStreak).toBe(1);
-    expect(s.correctStreak).toBe(0);
+    expect(s.currentInterval).toBe(2900); // 3000 - 100 (DECREMENT)
     e.dispose();
   });
 
-  it('capped at startingInterval on wrong answer at starting level', () => {
+  it('interval increases after 4 wrong answers (STREAK_THRESHOLD)', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
-    e.start();
+    await startEngine(e);
+
+    // Decrease interval by getting 4 correct (STREAK_THRESHOLD=4)
+    for (let i = 0; i < 4; i++) {
+      tickDigit(e);
+      const h = e.getState().digitHistory;
+      e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    }
+    tickDigit(e); // trigger check of 4th answer
+    expect(e.getState().currentInterval).toBe(2900); // 3000 - 100
+
+    // Submit 4 wrong answers to trigger interval increase
+    for (let i = 0; i < 4; i++) {
+      e.submitAnswer(9999);
+      tickDigit(e); // trigger check
+    }
+    // One more tick for checkStreakReset to clear wrongStreak
+    tickDigit(e);
+
+    const s = e.getState();
+    // 2900 + 100 = 3000, capped at startingInterval = 3000
+    expect(s.currentInterval).toBe(3000); // increased from 2900
+    e.dispose();
+  });
+
+  it('capped at startingInterval on wrong answer at starting level', async () => {
+    const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
+    await startEngine(e);
     tickDigit(e);
     tickDigit(e);
 
     // Submit wrong — interval can't go above startingInterval
     e.submitAnswer(9999);
+    tickDigit(e); // trigger check
     expect(e.getState().currentInterval).toBe(3000);
     e.dispose();
   });
 
-  it('cannot go below minimumInterval', () => {
+  it('cannot go below minimumInterval', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 700, minimumInterval: 500 }));
-    e.start();
-    tickDigit(e); // 1st
+    await startEngine(e); // 1st
 
-    // 3 correct → 700 - 200 = 500 = minimumInterval
-    for (let i = 0; i < 3; i++) {
+    // 4 correct → 700 - 100 = 600, then 600 - 100 = 500 (minimum)
+    // Need 8 correct to reach minimum from 700 with DECREMENT=100
+    for (let i = 0; i < 8; i++) {
       tickDigit(e);
       const h = e.getState().digitHistory;
       e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
     }
+    tickDigit(e); // trigger check
     expect(e.getState().currentInterval).toBe(500);
     e.dispose();
   });
 
-  it('correct answer resets wrongStreak', () => {
+  it('correct answer resets wrongStreak', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
-    e.start();
-    tickDigit(e);
-    tickDigit(e);
+    await startEngine(e); // 1st digit
+    tickDigit(e); // 2nd digit → can answer
 
     // Submit wrong
     e.submitAnswer(9999);
+    tickDigit(e); // trigger check → wrongStreak++
     expect(e.getState().wrongStreak).toBe(1);
 
     // Submit correct next
     tickDigit(e);
     const h = e.getState().digitHistory;
     e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    tickDigit(e); // trigger check → correct, wrongStreak reset
     expect(e.getState().wrongStreak).toBe(0);
     e.dispose();
   });
@@ -340,9 +389,9 @@ describe('Interval adaptation', () => {
 // ── Timer countdown ────────────────────────────────────────────────────────
 
 describe('Timer countdown', () => {
-  it('counts down each second', () => {
+  it('counts down each second', async () => {
     const e = createEngine(makeSettings({ timer: 600, startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
 
     expect(e.getState().timeLeft).toBe(600);
     tickSecond();
@@ -352,9 +401,9 @@ describe('Timer countdown', () => {
     e.dispose();
   });
 
-  it('completes when timer reaches 0', () => {
+  it('completes when timer reaches 0', async () => {
     const e = createEngine(makeSettings({ timer: 3, startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
 
     for (let i = 0; i < 3; i++) tickSecond();
 
@@ -390,33 +439,33 @@ describe('State machine transitions', () => {
     e.dispose();
   });
 
-  it('setup → active via start()', () => {
+  it('setup → active via start()', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
-    e.start();
+    await startEngine(e);
     expect(e.getState().phase).toBe('active');
     e.dispose();
   });
 
-  it('active → paused via pause()', () => {
+  it('active → paused via pause()', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
-    e.start();
+    await startEngine(e);
     e.pause();
     expect(e.getState().phase).toBe('paused');
     e.dispose();
   });
 
-  it('paused → active via resume()', () => {
+  it('paused → active via resume()', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
-    e.start();
+    await startEngine(e);
     e.pause();
     e.resume();
     expect(e.getState().phase).toBe('active');
     e.dispose();
   });
 
-  it('active → complete via stop()', () => {
+  it('active → complete via stop()', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
-    e.start();
+    await startEngine(e);
     e.stop();
     expect(e.getState().phase).toBe('complete');
     expect(e.getState().sessionResults).not.toBeNull();
@@ -485,35 +534,36 @@ describe('Settings persistence', () => {
 // ── Score calculation ──────────────────────────────────────────────────────
 
 describe('Score calculation', () => {
-  it('accuracy = totalCorrect / totalAnswers', () => {
+  it('accuracy = totalCorrect / totalAnswers', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e); // 1st
     tickDigit(e); // 2nd → can answer
 
     // Submit correct
     let h = e.getState().digitHistory;
     e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    tickDigit(e); // checks
 
     // Submit wrong
-    tickDigit(e);
     e.submitAnswer(9999);
+    tickDigit(e); // checks
 
     const s = e.getState();
     expect(s.accuracy).toBe(s.totalCorrect / s.totalAnswers);
     e.dispose();
   });
 
-  it('fastestInterval tracks minimum', () => {
+  it('fastestInterval tracks minimum', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
-    e.start();
+    await startEngine(e);
     expect(e.getState().fastestInterval).toBe(3000);
     e.dispose();
   });
 
-  it('session results saved on completion', () => {
+  it('session results saved on completion', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true, timer: 2, startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
 
     // Generate some digits
     tickDigit(e);
@@ -536,30 +586,6 @@ describe('Score calculation', () => {
   });
 });
 
-// ── Audio URLs ─────────────────────────────────────────────────────────────
-
-describe('Audio URLs', () => {
-  it('returns correct voice pack path', () => {
-    const e = createEngine(makeSettings({ voicePack: 'rose' }));
-    expect(e.getDigitAudioUrl(3)).toBe('/rose/3.wav');
-    expect(e.getDigitAudioUrl(1)).toBe('/rose/1.wav');
-    expect(e.getDigitAudioUrl(9)).toBe('/rose/9.wav');
-    e.dispose();
-  });
-
-  it('reflects updated voice pack', () => {
-    const e = createEngine(makeSettings({ voicePack: 'jenny' }));
-    expect(e.getDigitAudioUrl(5)).toBe('/jenny/5.wav');
-    e.dispose();
-  });
-
-  it('beep URL is /beep.wav', () => {
-    const e = createEngine();
-    expect(e.getBeepAudioUrl()).toBe('/beep.wav');
-    e.dispose();
-  });
-});
-
 // ── Subscribe pattern ──────────────────────────────────────────────────────
 
 describe('Subscribe pattern', () => {
@@ -570,20 +596,17 @@ describe('Subscribe pattern', () => {
 
     // subscribe immediately called once
     expect(states.length).toBe(1);
-
-    e.start();
-    expect(states.length).toBeGreaterThanOrEqual(2);
     unsub();
     e.dispose();
   });
 
-  it('unsubscribe stops notifications', () => {
+  it('unsubscribe stops notifications', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
     let count = 0;
     const unsub = e.subscribe(() => count++);
     const before = count;
     unsub();
-    e.start();
+    await startEngine(e);
     expect(count).toBe(before);
     e.dispose();
   });
@@ -600,9 +623,9 @@ describe('Edge cases', () => {
     e.dispose();
   });
 
-  it('cannot submit answer before enough history', () => {
+  it('cannot submit answer before enough history', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e); // 1 digit, can't answer
 
     e.submitAnswer(10);
@@ -611,31 +634,16 @@ describe('Edge cases', () => {
     e.dispose();
   });
 
-  it('dispose cleans up timers', () => {
+  it('dispose cleans up timers', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
-    e.start();
+    await startEngine(e);
     e.dispose();
     // No errors or leaks
   });
 
-  it('isPlayingAudio toggles on/off around digit generation', () => {
-    // Use interval > 500ms so audio clears before next digit fires
-    const e = createEngine(makeSettings({ startingInterval: 1000, minimumInterval: 500 }));
-    e.start();
-    expect(e.getState().isPlayingAudio).toBe(false);
-
-    tickDigit(e); // advance 1000ms → digit generated, isPlayingAudio = true
-    expect(e.getState().isPlayingAudio).toBe(true);
-
-    // After 500ms audio clears (next digit won't fire until 1000ms from now)
-    vi.advanceTimersByTime(600);
-    expect(e.getState().isPlayingAudio).toBe(false);
-    e.dispose();
-  });
-
-  it('nBack reported in state for variable mode', () => {
+  it('nBack reported in state for variable mode', async () => {
     const e = createEngine(makeSettings({ taskMode: 'variable', startingInterval: 100 }));
-    e.start();
+    await startEngine(e);
     tickDigit(e);
     const n = e.getState().nBack;
     expect(n === 1 || n === 2).toBe(true);

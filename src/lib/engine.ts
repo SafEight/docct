@@ -428,11 +428,13 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     // Check if answer matches expected
     if (Number(pendingAnswer) === expectedAnswer) {
+      lastAnswerCorrect = true;
       recordCorrect();
       return;
     }
 
     // Wrong answer
+    lastAnswerCorrect = false;
     recordIncorrect();
     if (settings.beepOnIncorrect) playBeepSound();
   }
