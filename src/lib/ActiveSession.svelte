@@ -120,8 +120,41 @@
 
   <!-- Center column -->
   <div class="flex flex-col justify-end gap-6 md:grow">
-    <!-- Controls row: pause/digit/stop -->
+    <!-- Controls row: digit/voice (LEFT, where speaker icon sits) → control area (RIGHT) -->
     <div class="flex flex-col items-center justify-center gap-6 md:flex-row md:gap-0">
+      <!-- Digit or voice icon — DIRECT child at START of row (where speaker icon lives in voice mode) -->
+      {#if state.settings.useVoice}
+        <!-- Voice mode: speaker icon with animation -->
+        <div class="flex justify-center items-center py-6 w-[88px]">
+          {#if state.isPlayingAudio}
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Zm32-16a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,232,80Z"></path></svg>
+          {:else}
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Z"></path></svg>
+          {/if}
+        </div>
+      {:else if state.currentDigit !== null}
+        <!-- Text/visual mode: digit with SVG progress ring -->
+        {#key state.digitHistory.length}
+          <div class="relative flex justify-center rounded-2xl transition-opacity opacity-100">
+            <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
+            <svg class="absolute inset-0" width="80" height="80" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="36" fill="none" stroke="#1a1f2e" stroke-width="4" />
+              <circle
+                cx="40" cy="40" r="36"
+                fill="none"
+                stroke="#10b981"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-dasharray="226.2"
+                stroke-dashoffset="226.2"
+                class="progress-ring"
+                style="animation-duration: {state.currentInterval}ms;"
+              />
+            </svg>
+          </div>
+        {/key}
+      {/if}
+
       <div class="flex grow items-center justify-center gap-6 md:justify-end">
         {#if isPaused}
           <!-- Mobile resume button (md:hidden) -->
@@ -135,32 +168,9 @@
           </button>
         {/if}
 
-        <!-- Interval text + digit + settled (ORDER matches original: interval FIRST, then digit, then settled) -->
+        <!-- Interval text + settled badge -->
         <div class="flex items-center gap-3">
-          <!-- Interval text (always show, FIRST in DOM — matches original) -->
           <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(state.currentInterval % 1000 === 0 ? 0 : 1)}</span> SECONDS</span>
-          {#if !state.settings.useVoice && state.currentDigit !== null}
-            <!-- Text/visual mode: digit + SVG progress ring -->
-            {#key state.digitHistory.length}
-              <div class="relative flex justify-center rounded-2xl transition-opacity opacity-100">
-                <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
-                <svg class="absolute inset-0" width="80" height="80" viewBox="0 0 80 80">
-                  <circle cx="40" cy="40" r="36" fill="none" stroke="#1a1f2e" stroke-width="4" />
-                  <circle
-                    cx="40" cy="40" r="36"
-                    fill="none"
-                    stroke="#10b981"
-                    stroke-width="4"
-                    stroke-linecap="round"
-                    stroke-dasharray="226.2"
-                    stroke-dashoffset="226.2"
-                    class="progress-ring"
-                    style="animation-duration: {state.currentInterval}ms;"
-                  />
-                </svg>
-              </div>
-            {/key}
-          {/if}
           {#if state.canAnswer}
             <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
           {/if}
