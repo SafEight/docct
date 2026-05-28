@@ -82,15 +82,23 @@
 
         <!-- Digit display + interval + settled badge -->
         <div class="flex items-center gap-3">
-          <span class="text-sm text-[#a9b4cc]">
-            {#if state.currentDigit !== null}
-              <span class="font-extrabold">{state.currentDigit}</span>
-            {/if}
-            {#if state.currentDigit !== null}
-              {@const secs = state.currentInterval / 1000}
-              {Number.isInteger(secs) ? secs : secs.toFixed(1)} SECOND{secs === 1 ? '' : 'S'}
-            {/if}
-          </span>
+          {#if state.settings.useVoice}
+            <!-- Voice mode: show volume icon -->
+            <div class="flex justify-center rounded-2xl transition-opacity {state.isPlayingAudio ? 'opacity-100' : 'opacity-0'}">
+              {#if state.isPlayingAudio}
+                <!-- 3-bar volume icon (playing) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Zm32-16a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,232,80Z"></path></svg>
+              {:else}
+                <!-- 2-bar volume icon (not playing) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Z"></path></svg>
+              {/if}
+            </div>
+          {:else}
+            <!-- Visual/text mode: show digit + interval -->
+            <div class="flex justify-center rounded-2xl transition-opacity {state.currentDigit !== null ? 'opacity-100' : 'opacity-0'}">
+              <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
+            </div>
+          {/if}
           {#if state.canAnswer}
             <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
           {/if}
