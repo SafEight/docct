@@ -57,10 +57,13 @@
   }
 
   function handleKeypadClick(answer: number, e: MouseEvent) {
-    // Ignore synthetic clicks that immediately follow a touch sequence (swipe or tap)
-    if (Date.now() - lastTouchEndTime < 300) {
+    // Ignore synthetic clicks that immediately follow a touch sequence (swipe or tap).
+    // Mobile browsers synthesise a click ~300–350 ms after touchend on the element
+    // where the touch *started*. For a swipe that element is the wrong button.
+    if (Date.now() - lastTouchEndTime < 500) {
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation?.();
       return;
     }
     selectedButton = answer;
