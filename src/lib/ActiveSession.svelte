@@ -10,10 +10,43 @@
 
   let selectedButton = $state<number | null>(null);
   let keyValue = $state('');
+  let swipeActive = $state(false);
 
   function handleKeypad(answer: number) {
     selectedButton = answer;
     engine.submitAnswer(answer);
+  }
+
+  /** Find the nearest keypad button under a touch point */
+  function buttonFromTouch(touch: Touch): number | null {
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return null;
+    const btn = el.closest('[data-answer]') as HTMLElement | null;
+    if (!btn) return null;
+    return parseInt(btn.dataset.answer!);
+  }
+
+  function handleKeypadTouchStart(answer: number, e: TouchEvent) {
+    e.preventDefault();
+    swipeActive = true;
+    selectedButton = answer;
+  }
+
+  function handleKeypadTouchMove(e: TouchEvent) {
+    if (!swipeActive) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const answer = buttonFromTouch(touch);
+    if (answer !== null) selectedButton = answer;
+  }
+
+  function handleKeypadTouchEnd(e: TouchEvent) {
+    if (!swipeActive) return;
+    e.preventDefault();
+    swipeActive = false;
+    if (selectedButton !== null) {
+      engine.submitAnswer(selectedButton);
+    }
   }
 
   function handleInput(e: Event) {
@@ -146,7 +179,13 @@
 
     <!-- Keypad area -->
     {#if state.settings.useKeypad}
-      <div class="flex justify-center">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="flex justify-center"
+        ontouchstart={handleKeypadTouchStart.bind(null, selectedButton ?? 0)}
+        ontouchmove={handleKeypadTouchMove}
+        ontouchend={handleKeypadTouchEnd}
+      >
         <div class="flex flex-col gap-3 overflow-hidden">
           <!-- Row 1: audio icon + 2,3 | 4,5,6 -->
           <div class="flex flex-col md:flex-row gap-3">
@@ -154,39 +193,39 @@
               <div class="flex justify-center items-center py-6 w-[88px]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Z"></path></svg>
               </div>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 2 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(2); }} onclick={() => handleKeypad(2)}><span class="select-none text-[#10b981] text-4xl font-extrabold">2</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 3 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(3); }} onclick={() => handleKeypad(3)}><span class="select-none text-[#10b981] text-4xl font-extrabold">3</span></button>
+              <button data-answer="2" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 2 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(2, e)} onclick={() => handleKeypad(2)}><span class="select-none text-[#10b981] text-4xl font-extrabold">2</span></button>
+              <button data-answer="3" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 3 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(3, e)} onclick={() => handleKeypad(3)}><span class="select-none text-[#10b981] text-4xl font-extrabold">3</span></button>
             </div>
             <div class="flex gap-3">
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 4 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(4); }} onclick={() => handleKeypad(4)}><span class="select-none text-[#10b981] text-4xl font-extrabold">4</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 5 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(5); }} onclick={() => handleKeypad(5)}><span class="select-none text-[#10b981] text-4xl font-extrabold">5</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 6 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(6); }} onclick={() => handleKeypad(6)}><span class="select-none text-[#10b981] text-4xl font-extrabold">6</span></button>
+              <button data-answer="4" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 4 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(4, e)} onclick={() => handleKeypad(4)}><span class="select-none text-[#10b981] text-4xl font-extrabold">4</span></button>
+              <button data-answer="5" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 5 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(5, e)} onclick={() => handleKeypad(5)}><span class="select-none text-[#10b981] text-4xl font-extrabold">5</span></button>
+              <button data-answer="6" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 6 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(6, e)} onclick={() => handleKeypad(6)}><span class="select-none text-[#10b981] text-4xl font-extrabold">6</span></button>
             </div>
           </div>
           <!-- Row 2: 7,8,9 | 10,11,12 -->
           <div class="flex flex-col md:flex-row gap-3">
             <div class="flex gap-3">
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 7 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(7); }} onclick={() => handleKeypad(7)}><span class="select-none text-[#10b981] text-4xl font-extrabold">7</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 8 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(8); }} onclick={() => handleKeypad(8)}><span class="select-none text-[#10b981] text-4xl font-extrabold">8</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 9 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(9); }} onclick={() => handleKeypad(9)}><span class="select-none text-[#10b981] text-4xl font-extrabold">9</span></button>
+              <button data-answer="7" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 7 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(7, e)} onclick={() => handleKeypad(7)}><span class="select-none text-[#10b981] text-4xl font-extrabold">7</span></button>
+              <button data-answer="8" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 8 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(8, e)} onclick={() => handleKeypad(8)}><span class="select-none text-[#10b981] text-4xl font-extrabold">8</span></button>
+              <button data-answer="9" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 9 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(9, e)} onclick={() => handleKeypad(9)}><span class="select-none text-[#10b981] text-4xl font-extrabold">9</span></button>
             </div>
             <div class="flex gap-3">
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 10 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(10); }} onclick={() => handleKeypad(10)}><span class="select-none text-[#10b981] text-4xl font-extrabold">10</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 11 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(11); }} onclick={() => handleKeypad(11)}><span class="select-none text-[#10b981] text-4xl font-extrabold">11</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 12 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(12); }} onclick={() => handleKeypad(12)}><span class="select-none text-[#10b981] text-4xl font-extrabold">12</span></button>
+              <button data-answer="10" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 10 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(10, e)} onclick={() => handleKeypad(10)}><span class="select-none text-[#10b981] text-4xl font-extrabold">10</span></button>
+              <button data-answer="11" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 11 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(11, e)} onclick={() => handleKeypad(11)}><span class="select-none text-[#10b981] text-4xl font-extrabold">11</span></button>
+              <button data-answer="12" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 12 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(12, e)} onclick={() => handleKeypad(12)}><span class="select-none text-[#10b981] text-4xl font-extrabold">12</span></button>
             </div>
           </div>
           <!-- Row 3: 13,14,15 | 16,17,18 -->
           <div class="flex flex-col md:flex-row gap-3">
             <div class="flex gap-3">
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 13 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(13); }} onclick={() => handleKeypad(13)}><span class="select-none text-[#10b981] text-4xl font-extrabold">13</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 14 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(14); }} onclick={() => handleKeypad(14)}><span class="select-none text-[#10b981] text-4xl font-extrabold">14</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 15 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(15); }} onclick={() => handleKeypad(15)}><span class="select-none text-[#10b981] text-4xl font-extrabold">15</span></button>
+              <button data-answer="13" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 13 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(13, e)} onclick={() => handleKeypad(13)}><span class="select-none text-[#10b981] text-4xl font-extrabold">13</span></button>
+              <button data-answer="14" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 14 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(14, e)} onclick={() => handleKeypad(14)}><span class="select-none text-[#10b981] text-4xl font-extrabold">14</span></button>
+              <button data-answer="15" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 15 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(15, e)} onclick={() => handleKeypad(15)}><span class="select-none text-[#10b981] text-4xl font-extrabold">15</span></button>
             </div>
             <div class="flex gap-3">
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 16 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(16); }} onclick={() => handleKeypad(16)}><span class="select-none text-[#10b981] text-4xl font-extrabold">16</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 17 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(17); }} onclick={() => handleKeypad(17)}><span class="select-none text-[#10b981] text-4xl font-extrabold">17</span></button>
-              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 18 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => { e.preventDefault(); handleKeypad(18); }} onclick={() => handleKeypad(18)}><span class="select-none text-[#10b981] text-4xl font-extrabold">18</span></button>
+              <button data-answer="16" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 16 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(16, e)} onclick={() => handleKeypad(16)}><span class="select-none text-[#10b981] text-4xl font-extrabold">16</span></button>
+              <button data-answer="17" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 17 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(17, e)} onclick={() => handleKeypad(17)}><span class="select-none text-[#10b981] text-4xl font-extrabold">17</span></button>
+              <button data-answer="18" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 18 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(18, e)} onclick={() => handleKeypad(18)}><span class="select-none text-[#10b981] text-4xl font-extrabold">18</span></button>
             </div>
           </div>
         </div>
