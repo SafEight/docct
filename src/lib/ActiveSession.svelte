@@ -57,13 +57,10 @@
   }
 
   function handleKeypadTouchStart(answer: number, e: TouchEvent) {
-    // preventDefault stops synthetic click AND scroll-on-touch, but on some
-    // old browsers it can suppress touchmove.  touch-action:none on the
-    // container is the primary scroll-gate; we keep preventDefault here
-    // as a belt-and-braces measure for click suppression.
     e.preventDefault();
     swipeActive = true;
     selectedButton = answer;
+    engine.submitAnswer(answer);
   }
 
   function handleKeypadTouchMove(e: TouchEvent) {
@@ -72,28 +69,17 @@
     const touch = e.touches[0];
     if (!touch) return;
     const answer = buttonFromTouch(touch);
-    if (answer !== null) {
+    if (answer !== null && answer !== selectedButton) {
       selectedButton = answer;
+      engine.submitAnswer(answer);
     }
   }
 
   function handleKeypadTouchEnd(e: TouchEvent) {
     if (!swipeActive) return;
-    e.preventDefault();
     swipeActive = false;
     lastTouchEndTime = Date.now();
-    // Fallback: if touchmove was suppressed by the browser, use the final
-    // touch position from changedTouches to determine the lifted button.
-    const touch = e.changedTouches[0];
-    if (touch) {
-      const answer = buttonFromTouch(touch);
-      if (answer !== null) {
-        selectedButton = answer;
-      }
-    }
-    if (selectedButton !== null) {
-      engine.submitAnswer(selectedButton);
-    }
+    // Already submitted in touchstart/touchmove — nothing more to do.
   }
 
   function handleKeypadClick(answer: number, e: MouseEvent) {
