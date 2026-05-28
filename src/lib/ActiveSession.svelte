@@ -54,10 +54,11 @@
   }
 
   const isPaused = $derived(state.phase === 'paused');
+  const currentDigit = $derived(state.currentDigit);
 
   // Clear selection when new digit arrives
   $effect(() => {
-    state.currentDigit;
+    currentDigit; // track the primitive value, not state object
     selectedButton = null;
     keyValue = '';
   });
