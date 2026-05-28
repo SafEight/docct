@@ -105,29 +105,33 @@
         <!-- Digit display + interval + settled badge -->
         <div class="flex items-center gap-3">
           {#if !state.settings.useVoice && state.currentDigit !== null}
-            <!-- Text/visual mode: show digit with circular progress ring -->
-            <div class="relative flex justify-center items-center">
-              <svg class="absolute" width="80" height="80" viewBox="0 0 80 80">
-                <!-- Background circle -->
-                <circle cx="40" cy="40" r="36" fill="none" stroke="#1a1f2e" stroke-width="4" />
-                <!-- Progress circle -->
-                <circle
-                  cx="40" cy="40" r="36"
-                  fill="none"
-                  stroke="#10b981"
-                  stroke-width="4"
-                  stroke-linecap="round"
-                  stroke-dasharray="226.2"
-                  stroke-dashoffset="0"
-                  class="progress-ring"
-                  style="animation-duration: {state.currentInterval}ms;"
-                />
-              </svg>
-              <span class="relative text-[#ffffff] text-4xl font-medium z-10">{state.currentDigit}</span>
-            </div>
+            <!-- Text/visual mode: show digit with circular progress ring (sibling layout like original) -->
+            {#key currentDigit}
+              <div class="relative">
+                <div>
+                  <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
+                </div>
+                <svg class="absolute inset-0" width="80" height="80" viewBox="0 0 80 80">
+                  <!-- Background circle -->
+                  <circle cx="40" cy="40" r="36" fill="none" stroke="#1a1f2e" stroke-width="4" />
+                  <!-- Progress circle -->
+                  <circle
+                    cx="40" cy="40" r="36"
+                    fill="none"
+                    stroke="#10b981"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                    stroke-dasharray="226.2"
+                    stroke-dashoffset="226.2"
+                    class="progress-ring"
+                    style="animation-duration: {state.currentInterval}ms;"
+                  />
+                </svg>
+              </div>
+            {/key}
           {/if}
           <!-- Interval text (always show) -->
-          <span class="text-sm font-medium text-[#a9b4cc]">{(state.currentInterval / 1000).toFixed(2)} SECONDS</span>
+          <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(2)}</span> SECONDS</span>
           {#if state.canAnswer}
             <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
           {/if}
