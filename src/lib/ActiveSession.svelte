@@ -9,10 +9,27 @@
   });
 
   let selectedButton = $state<number | null>(null);
+  let keyValue = $state('');
 
   function handleKeypad(answer: number) {
     selectedButton = answer;
     engine.submitAnswer(answer);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (state.phase !== 'active' || !state.canAnswer) return;
+    const num = parseInt(e.key);
+    if (num >= 2 && num <= 18) {
+      keyValue = e.key;
+      engine.submitAnswer(num);
+    } else if (e.key === 'Enter') {
+      // Submit current value if any
+      const num = parseInt(keyValue);
+      if (num >= 2 && num <= 18) {
+        engine.submitAnswer(num);
+      }
+      keyValue = '';
+    }
   }
 
   const isPaused = $derived(state.phase === 'paused');
@@ -21,7 +38,15 @@
   $effect(() => {
     state.currentDigit;
     selectedButton = null;
+    keyValue = '';
   });
+
+  // Status text for keyboard mode
+  const statusText = $derived(
+    isPaused ? 'Paused' :
+    state.canAnswer ? 'Type a number' :
+    'Wait for enough digits...'
+  );
 </script>
 
 <div class="relative flex grow select-none flex-col items-center justify-end gap-12 py-6 md:flex-row md:grow-0 md:justify-evenly md:gap-24">
@@ -31,10 +56,10 @@
       <div class="grow w-[10px] h-[10px] {state.correctStreak >= 1 ? 'streak-bar bg-[#4fe84f]' : state.wrongStreak >= 1 ? 'streak-bar bg-[#e85c4f]' : 'bg-[#4f79e8]'}"></div>
       <div class="w-[10px] h-[10px] {state.correctStreak >= 2 ? 'streak-bar bg-[#4fe84f]' : state.wrongStreak >= 2 ? 'streak-bar bg-[#e85c4f]' : 'bg-[#0f121a]'}"></div>
       <div class="w-[10px] h-[10px] {state.correctStreak >= 3 ? 'streak-bar bg-[#4fe84f]' : state.wrongStreak >= 3 ? 'streak-bar bg-[#e85c4f]' : 'bg-[#0f121a]'}"></div>
-      <div class="w-[10px] h-[10px] rounded-r-full md:rounded-r-none md:rounded-b-full {state.correctStreak >= 4 ? 'streak-bar bg-[#4fe84f]' : state.wrongStreak >= 4 ? 'streak-bar bg-[#e85c4f]' : 'bg-[#0f121a]'}"></div>
+      <div class="w-[10px] h-[10px] rounded-r-full md:rounded-r-none md:rounded-b-full {state.correctStreak === 4 ? 'streak-bar bg-[#4fe84f]' : state.wrongStreak >= 4 ? 'streak-bar bg-[#e85c4f]' : 'bg-[#0f121a]'}"></div>
     </div>
     <span class="absolute top-full mt-12 hidden whitespace-nowrap text-xs font-medium text-[#a9b4cc] md:inline">
-      <span class="font-extrabold">{state.correctStreak}</span> streak
+      <span class="font-extrabold">{state.correctStreak}</span> STREAKS
     </span>
   </div>
 
@@ -75,50 +100,71 @@
     </div>
 
     <!-- Keypad area -->
-    <div class="flex justify-center">
-      <div class="flex flex-col gap-3 overflow-hidden">
-        <!-- Row 1: audio icon + 2,3 | 4,5,6 -->
-        <div class="flex flex-col md:flex-row gap-3">
-          <div class="flex gap-3">
-            <div class="flex justify-center items-center py-6 w-[88px]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Z"></path></svg>
+    {#if state.settings.useKeypad}
+      <div class="flex justify-center">
+        <div class="flex flex-col gap-3 overflow-hidden">
+          <!-- Row 1: audio icon + 2,3 | 4,5,6 -->
+          <div class="flex flex-col md:flex-row gap-3">
+            <div class="flex gap-3">
+              <div class="flex justify-center items-center py-6 w-[88px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Z"></path></svg>
+              </div>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 2 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(2)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">2</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 3 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(3)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">3</span></button>
             </div>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 2 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(2)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">2</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 3 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(3)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">3</span></button>
+            <div class="flex gap-3">
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 4 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(4)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">4</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 5 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(5)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">5</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 6 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(6)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">6</span></button>
+            </div>
           </div>
-          <div class="flex gap-3">
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 4 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(4)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">4</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 5 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(5)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">5</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 6 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(6)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">6</span></button>
+          <!-- Row 2: 7,8,9 | 10,11,12 -->
+          <div class="flex flex-col md:flex-row gap-3">
+            <div class="flex gap-3">
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 7 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(7)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">7</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 8 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(8)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">8</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 9 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(9)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">9</span></button>
+            </div>
+            <div class="flex gap-3">
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 10 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(10)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">10</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 11 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(11)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">11</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 12 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(12)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">12</span></button>
+            </div>
           </div>
-        </div>
-        <!-- Row 2: 7,8,9 | 10,11,12 -->
-        <div class="flex flex-col md:flex-row gap-3">
-          <div class="flex gap-3">
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 7 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(7)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">7</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 8 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(8)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">8</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 9 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(9)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">9</span></button>
-          </div>
-          <div class="flex gap-3">
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 10 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(10)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">10</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 11 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(11)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">11</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 12 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(12)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">12</span></button>
-          </div>
-        </div>
-        <!-- Row 3: 13,14,15 | 16,17,18 -->
-        <div class="flex flex-col md:flex-row gap-3">
-          <div class="flex gap-3">
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 13 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(13)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">13</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 14 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(14)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">14</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 15 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(15)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">15</span></button>
-          </div>
-          <div class="flex gap-3">
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 16 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(16)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">16</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 17 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(17)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">17</span></button>
-            <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 18 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(18)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">18</span></button>
+          <!-- Row 3: 13,14,15 | 16,17,18 -->
+          <div class="flex flex-col md:flex-row gap-3">
+            <div class="flex gap-3">
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 13 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(13)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">13</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 14 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(14)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">14</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 15 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(15)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">15</span></button>
+            </div>
+            <div class="flex gap-3">
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 16 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(16)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">16</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 17 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(17)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">17</span></button>
+              <button class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 18 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" onclick={() => handleKeypad(18)}><span class="select-none text-[#4f79e8] text-4xl font-extrabold">18</span></button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    {:else}
+      <!-- Keyboard input mode -->
+      <div class="flex max-w-screen flex-col px-6 md:p-0">
+        <input
+          type="text"
+          inputmode="numeric"
+          tabindex="0"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          style="-webkit-user-select:text; user-select:text;"
+          class="pointer-events-auto select-text caret-[#4f79e8] md:h-[288px] md:w-[588px] rounded-4xl bg-[#000000] py-6 text-center text-4xl font-extrabold text-[#4f79e8] [appearance:textfield] focus:outline-none disabled:cursor-default disabled:text-[#7e889c] md:py-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          disabled={isPaused || !state.canAnswer}
+          placeholder={statusText}
+          value={keyValue}
+          onkeydown={handleKeydown}
+        />
+      </div>
+    {/if}
   </div>
 </div>
