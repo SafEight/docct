@@ -155,7 +155,7 @@
 
         <!-- Interval text + settled badge -->
         <div class="flex items-center gap-3">
-          <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(state.currentInterval % 1000 === 0 ? 0 : 1)}</span> SECONDS</span>
+          <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(2)}</span> SECONDS</span>
           {#if state.canAnswer}
             <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
           {/if}

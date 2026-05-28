@@ -77,18 +77,14 @@ const HIGH_SCORES_KEY = 'highScores';
 const STREAK_THRESHOLD = 4; // correct/wrong streak needed to change interval
 
 /**
- * Proportional adaptation: at lower intervals the same absolute change
- * is relatively bigger, so we scale steps with the current interval.
- * Formula: step = max(10, round(current / 100))   [in ms]
- *   3.0s → 30ms per step (10 steps ≈ 0.3s)
- *   1.5s → 15ms per step
- *   1.0s → 10ms per step (10 steps = 0.1s, same as original granularity)
- *   0.5s → 10ms per step (minimum)
- * Result: takes roughly the same NUMBER of streaks to adapt at every
- * interval level, matching the original's "feel" while keeping 0.01s grid.
+ * Proportional adaptation: step scales with current interval.
+ * Formula: step = max(20, round(current / 50))   [in ms]
+ *   3.0s → 60ms per step (10 steps ≈ 0.6s, fast)
+ *   1.0s → 20ms per step (10 steps = 0.2s)
+ *   0.5s → 20ms per step (floor)
  */
-function adaptationStep(currentInterval: number): number {
-  return Math.max(10, Math.round(currentInterval / 100));
+function adaptationStep(current: number): number {
+  return Math.max(20, Math.round(current / 50));
 }
 const INITIAL_DELAY = 500; // ms before first digit (matches original)
 
