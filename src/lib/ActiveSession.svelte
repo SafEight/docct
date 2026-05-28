@@ -12,6 +12,30 @@
   let keyValue = $state('');
   let swipeActive = $state(false);
   let lastTouchEndTime = $state(0);
+  let ringProgress = $state(201);
+
+  // JS-driven progress ring: runs on every new digit, animates via requestAnimationFrame
+  $effect(() => {
+    const interval = state.currentInterval;
+    const _ = state.digitHistory.length; // dependency: re-run on every new digit
+    if (state.settings.useVoice || state.currentDigit === null) return;
+
+    ringProgress = 201; // start empty
+    const startTime = performance.now();
+    let rafId: number;
+
+    function tick() {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / interval, 1);
+      ringProgress = 201 * (1 - progress);
+      if (progress < 1) {
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(rafId);
+  });
 
   /** Find the nearest keypad button under a touch point */
   function buttonFromTouch(touch: Touch): number | null {
@@ -194,25 +218,22 @@
                   {/if}
                 {:else if state.currentDigit !== null}
                   <!-- Text/visual mode: digit with SVG progress ring -->
-                  {#key state.digitHistory.length}
-                    <div class="relative">
-                      <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
-                      <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="72" height="72" viewBox="0 0 72 72">
-                        <circle cx="36" cy="36" r="32" fill="none" stroke="#1a1f2e" stroke-width="4" />
-                        <circle
-                          cx="36" cy="36" r="32"
-                          fill="none"
-                          stroke="#10b981"
-                          stroke-width="4"
-                          stroke-linecap="round"
-                          stroke-dasharray="201"
-                          stroke-dashoffset="201"
-                          class="progress-ring"
-                          style="animation-duration: {state.currentInterval}ms;"
-                        />
-                      </svg>
-                    </div>
-                  {/key}
+                  <div class="relative">
+                    <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
+                    <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="72" height="72" viewBox="0 0 72 72">
+                      <circle cx="36" cy="36" r="32" fill="none" stroke="#1a1f2e" stroke-width="4" />
+                      <circle
+                        cx="36" cy="36" r="32"
+                        fill="none"
+                        stroke="#10b981"
+                        stroke-width="4"
+                        stroke-linecap="round"
+                        stroke-dasharray="201"
+                        stroke-dashoffset={ringProgress}
+                        style="transform: rotate(-90deg); transform-origin: center;"
+                      />
+                    </svg>
+                  </div>
                 {/if}
               </div>
               <button data-answer="2" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 2 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(2, e)} onclick={(e) => handleKeypadClick(2, e)}><span class="select-none text-[#10b981] text-4xl font-extrabold">2</span></button>
@@ -277,18 +298,4 @@
 </div>
 
 <style>
-  .progress-ring {
-    transform: rotate(-90deg);
-    transform-origin: center;
-    animation: fill-ring linear forwards;
-  }
-
-  @keyframes fill-ring {
-    from {
-      stroke-dashoffset: 201;
-    }
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
 </style>
