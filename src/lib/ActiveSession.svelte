@@ -174,18 +174,18 @@
                 {:else if state.currentDigit !== null}
                   <!-- Text/visual mode: digit with SVG progress ring -->
                   {#key state.digitHistory.length}
-                    <div class="relative flex justify-center rounded-2xl transition-opacity opacity-100">
+                    <div class="relative">
                       <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
-                      <svg class="absolute inset-0 -m-2" width="96" height="96" viewBox="0 0 80 80">
-                        <circle cx="40" cy="40" r="36" fill="none" stroke="#1a1f2e" stroke-width="4" />
+                      <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="72" height="72" viewBox="0 0 72 72">
+                        <circle cx="36" cy="36" r="32" fill="none" stroke="#1a1f2e" stroke-width="4" />
                         <circle
-                          cx="40" cy="40" r="36"
+                          cx="36" cy="36" r="32"
                           fill="none"
                           stroke="#10b981"
                           stroke-width="4"
                           stroke-linecap="round"
-                          stroke-dasharray="226.2"
-                          stroke-dashoffset="226.2"
+                          stroke-dasharray="201"
+                          stroke-dashoffset="201"
                           class="progress-ring"
                           style="animation-duration: {state.currentInterval}ms;"
                         />
@@ -264,7 +264,7 @@
 
   @keyframes fill-ring {
     from {
-      stroke-dashoffset: 226.2;
+      stroke-dashoffset: 201;
     }
     to {
       stroke-dashoffset: 0;
