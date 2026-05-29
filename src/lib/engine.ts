@@ -45,6 +45,7 @@ export interface GameState {
   totalCorrect: number;
   totalAnswers: number;
   digitHistory: number[];
+  digitGeneration: number;
   nBack: number;
   lastAnswerCorrect: boolean | null;
   sessionResults: SessionResult | null;
@@ -74,18 +75,18 @@ export interface Engine {
 const SETTINGS_KEY = 'settings';
 const HISTORY_KEY = 'sessionHistory';
 const HIGH_SCORES_KEY = 'highScores';
-const STREAK_THRESHOLD = 4; // correct/wrong streak needed to change interval
+const STREAK_THRESHOLD = 3; // correct/wrong streak needed to change interval
 
 /**
  * Proportional adaptation: step scales with current interval.
- * Formula: step = max(10, round(current / 25))   [in ms]
- *   3.0s → 120ms per step (fast descent from high intervals)
- *   1.0s →  40ms per step
- *   0.5s →  20ms per step
- *   0.3s →  12ms per step (approaching floor)
+ * Formula: step = max(15, round(current / 12))   [in ms]
+ *   3.0s → 250ms per step (fast descent from high intervals)
+ *   1.0s →  83ms per step
+ *   0.5s →  42ms per step
+ *   0.3s →  25ms per step (approaching floor)
  */
 function adaptationStep(current: number): number {
-  return Math.max(10, Math.round(current / 25));
+  return Math.max(15, Math.round(current / 12));
 }
 const INITIAL_DELAY = 500; // ms before first digit (matches original)
 
@@ -258,6 +259,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   let totalCorrect = 0;
   let totalWrong = 0;         // counts WRONG answers only (like original)
   let digitHistory: number[] = [];
+  let digitGeneration = 0;      // monotonic counter, incremented on each new digit
   let currentNBack = 1;
   let lastAnswerCorrect: boolean | null = null;
   let sessionResults: SessionResult | null = null;
@@ -391,6 +393,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       totalCorrect,
       totalAnswers: totalCorrect + totalWrong, // total trials (for display)
       digitHistory: [...digitHistory],
+      digitGeneration,
       nBack: currentNBack,
       lastAnswerCorrect,
       sessionResults,
@@ -519,6 +522,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
       digitHistory = newHistory;
       currentDigit = digit;
+      digitGeneration++;
       currentNBack = nBackValue;
 
       // Calculate expected answer for NEXT time
@@ -660,6 +664,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       totalCorrect = 0;
       totalWrong = 0;
       digitHistory = [];
+      digitGeneration = 0;
       currentNBack = 1;
       lastAnswerCorrect = null;
       sessionResults = null;

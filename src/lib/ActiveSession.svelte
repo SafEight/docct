@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { Engine, GameState } from '$lib/engine';
 
   let { engine }: { engine: Engine } = $props();
@@ -14,11 +15,22 @@
   let lastTouchEndTime = $state(0);
   let ringProgress = $state(201);
 
-  // JS-driven progress ring: runs on every new digit, animates via requestAnimationFrame
+  // Derived primitives: Svelte 5 $effect tracks the whole `state` proxy, so any
+  // notify() (including submitAnswer) re-runs the effect and restarts the ring.
+  // By extracting primitives into $derived, the effect only re-runs when the
+  // underlying value actually changes — not on every state object replacement.
+  const ringInterval = $derived(state.currentInterval);
+  const ringDigitGen = $derived(state.digitGeneration);
+  const ringDigit = $derived(state.currentDigit);
+  const ringVoice = $derived(state.settings.useVoice);
+
+  // JS-driven progress ring: runs on every new digit, animates via requestAnimationFrame.
+  // Depends on derived primitives only — submitAnswer() → notify() does NOT change
+  // digitGeneration or currentInterval, so the ring won't restart mid-turn.
   $effect(() => {
-    const interval = state.currentInterval;
-    const _ = state.digitHistory.length; // dependency: re-run on every new digit
-    if (state.settings.useVoice || state.currentDigit === null) return;
+    const interval = ringInterval;
+    const _gen = ringDigitGen; // track but just ensure effect re-runs on new digit
+    if (ringVoice || ringDigit === null) return;
 
     ringProgress = 201; // start empty
     const startTime = performance.now();
@@ -146,10 +158,23 @@
   const isPaused = $derived(state.phase === 'paused');
   const currentDigit = $derived(state.currentDigit);
 
-  // Clear selection when new digit arrives
+  // Clear selection when new digit arrives.
+  // If the user's finger is still on a button (swipeActive), re-submit that
+  // answer instead of clearing — otherwise the held button goes unregistered
+  // and the turn is marked wrong.
+  // Uses untrack() for swipeActive/selectedButton so the effect ONLY re-runs
+  // on currentDigit changes — not on every notify() → state replacement, which
+  // would clear the highlight mid-press.
   $effect(() => {
-    currentDigit; // track the primitive value, not state object
-    selectedButton = null;
+    currentDigit; // only tracked dependency
+    const swiping = untrack(() => swipeActive);
+    const selected = untrack(() => selectedButton);
+    if (swiping && selected !== null) {
+      // Finger still down on a button — re-submit for the new turn
+      engine.submitAnswer(selected);
+    } else {
+      selectedButton = null;
+    }
     keyValue = '';
   });
 
