@@ -244,43 +244,71 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   // Merge persisted settings with defaults, then apply any overrides
   const settings: GameSettings = { ...loadSettingsFromStorage(), ...overrides };
 
-  // Internal mutable state
+  // ── Internal mutable state ─────────────────────────────────────────────
+  // These are the engine's private fields. They are NOT exposed directly —
+  // buildState() snapshots them into a fresh GameState, and notify() pushes
+  // that snapshot to all subscribers.
   let phase: GameState['phase'] = settings.onboardingCompleted ? 'setup' : 'onboarding';
-  let currentDigit: number | null = null;
-  let canAnswer = false;
-  let isPlayingAudio = false;
-  let timeLeft = settings.timer;
-  const totalTime = settings.timer;
-  let currentInterval = settings.startingInterval;
-  let fastestInterval = settings.startingInterval;
-  let correctStreak = 0;      // display streak (capped at threshold)
-  let wrongStreak = 0;        // display wrong streak (capped at threshold)
-  let longestStreakCount = 0;
-  let totalCorrect = 0;
-  let totalWrong = 0;         // counts WRONG answers only (like original)
-  let digitHistory: number[] = [];
-  let digitGeneration = 0;      // monotonic counter, incremented on each new digit
-  let currentNBack = 1;
-  let lastAnswerCorrect: boolean | null = null;
-  let sessionResults: SessionResult | null = null;
+  let currentDigit: number | null = null;  // digit currently shown to the player (1-9)
+  let canAnswer = false;     // true once enough digits have been shown for an N-back match
+  let isPlayingAudio = false; // true while a voice digit is playing (suppresses ring/text)
+  let timeLeft = settings.timer; // seconds remaining in the session (counts down each second)
+  const totalTime = settings.timer; // session length in seconds (immutable once set)
 
-  // Internal streak counters (toward threshold)
+  // ── Interval (difficulty speed) ────────────────────────────────────────
+  // The interval is the gap between digits in ms. Starts at startingInterval
+  // (default 3000ms), decreases on correct streaks, increases on wrong streaks.
+  // The adaptationStep formula scales proportionally so high intervals drop
+  // fast while low intervals slow down (asymptotic approach to the floor).
+  let currentInterval = settings.startingInterval; // current gap between digits (ms)
+  let fastestInterval = settings.startingInterval; // best (lowest) interval this session
+
+  // ── Streak system ──────────────────────────────────────────────────────
+  // Two parallel counter pairs track consecutive correct/wrong answers:
+  //   *Counter: raw count toward the next threshold (resets on streak break)
+  //   *Streak:  DISPLAY value for the UI bar (capped at STREAK_THRESHOLD)
+  // When *Counter hits STREAK_THRESHOLD, the interval adapts and counter resets.
+  // longestStreakCount tallies completed streaks (for high score tracking).
+  let correctStreak = 0;      // display: consecutive correct (0..STREAK_THRESHOLD)
+  let wrongStreak = 0;        // display: consecutive wrong   (0..STREAK_THRESHOLD)
+  let longestStreakCount = 0; // how many streaks reached the threshold this session
+  let totalCorrect = 0;       // lifetime correct answers this session
+  let totalWrong = 0;         // lifetime wrong answers this session
+
+  // ── Digit history ──────────────────────────────────────────────────────
+  let digitHistory: number[] = []; // ring buffer of recent digits (for N-back matching)
+  let digitGeneration = 0;  // monotonic counter — bumped on each new digit so the UI can
+                             // trigger animations without re-running on every notify()
+  let currentNBack = 1;      // N-back value for the current turn (1 or 2, or random)
+  let lastAnswerCorrect: boolean | null = null; // result of the most recently checked answer
+  let sessionResults: SessionResult | null = null; // populated when the session ends
+
+  // ── Streak counters (raw, toward threshold) ───────────────────────────
+  // These increment on each correct/wrong answer and reset when the streak
+  // breaks (opposite answer) or the threshold is reached (interval adapts).
+  // correctStreak/wrongStreak (above) are capped display copies of these.
   let correctStreakCounter = 0;
   let wrongStreakCounter = 0;
 
-  // Response time tracking
-  let digitShownAt = 0;
-  let totalResponseMs = 0;
-  let responseCount = 0;
-  let lastResponseTime = 0;
+  // ── Response time tracking ─────────────────────────────────────────────
+  // Measured from digit appearance (digitShownAt) to submitAnswer() call.
+  // Only valid answers (not skipped) are included in the average.
+  let digitShownAt = 0;       // performance.now() timestamp when digit appeared
+  let totalResponseMs = 0;    // sum of all valid response times (ms)
+  let responseCount = 0;      // number of valid responses (for averaging)
+  let lastResponseTime = 0;   // response time for the current pending answer (ms)
 
-  // Pending answer (deferred checking)
-  let pendingAnswer: number | undefined = undefined;
-  let expectedAnswer: number | undefined = undefined;
+  // ── Pending answer (deferred checking) ─────────────────────────────────
+  // Answers are NOT checked on submit. They are stored as pendingAnswer
+  // and validated on the NEXT digit (checkPendingAnswer). This matches
+  // the original's deferred model: see digit → submit → answer checked
+  // when the next digit appears (or at session end).
+  let pendingAnswer: number | undefined = undefined; // player's submitted answer
+  let expectedAnswer: number | undefined = undefined; // correct answer (digit + N-back digit)
 
-  // Timers
-  let countdownTimer: ReturnType<typeof setInterval> | null = null;
-  let digitTimer: ReturnType<typeof setTimeout> | null = null;
+  // ── Timers ─────────────────────────────────────────────────────────────
+  let countdownTimer: ReturnType<typeof setInterval> | null = null; // 1-second session clock
+  let digitTimer: ReturnType<typeof setTimeout> | null = null;     // next digit timer
 
   // ── Web Audio API ──────────────────────────────────────────────────────
   let audioContext: AudioContext | null = null;
@@ -416,14 +444,17 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   }
 
   // ── Streak reset check ─────────────────────────────────────────────────
-
+  // After a streak hits the display threshold, reset it so the UI bar
+  // starts filling from 0 for the next streak cycle.
   function checkStreakReset(): void {
     if (correctStreak === STREAK_THRESHOLD) correctStreak = 0;
     if (wrongStreak === STREAK_THRESHOLD) wrongStreak = 0;
   }
 
   // ── Answer checking (deferred to next digit) ───────────────────────────
-
+  // This runs at the START of each new digit cycle (Phase 1), before the
+  // new digit is shown. It validates pendingAnswer from the previous turn.
+  // Three outcomes: no answer (skip → wrong), correct, or wrong.
   function checkPendingAnswer(): void {
     if (expectedAnswer === undefined) return;
 
@@ -455,34 +486,38 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   }
 
   // ── Score recording ────────────────────────────────────────────────────
+  // recordCorrect/increment the streak, and if the streak hits the
+  // threshold, adapt the interval (speed up or slow down).
 
   function recordCorrect(): void {
-    totalCorrect++;
-    correctStreakCounter++;
-    wrongStreakCounter = 0;
-    wrongStreak = 0;
-    correctStreak = Math.min(correctStreakCounter, STREAK_THRESHOLD);
+    totalCorrect++;                    // lifetime correct count
+    correctStreakCounter++;            // count toward next speed-up
+    wrongStreakCounter = 0;            // break any wrong streak
+    wrongStreak = 0;                   // reset wrong display
+    correctStreak = Math.min(correctStreakCounter, STREAK_THRESHOLD); // update display (capped)
 
     if (correctStreakCounter === STREAK_THRESHOLD) {
-      longestStreakCount++;
+      // Player hit the streak target — speed up!
+      longestStreakCount++;            // count completed streaks for high score
       const step = adaptationStep(currentInterval);
       currentInterval = Math.max(settings.minimumInterval, currentInterval - step);
       fastestInterval = Math.min(fastestInterval, currentInterval);
-      correctStreakCounter = 0;
+      correctStreakCounter = 0;        // reset for next streak cycle
     }
   }
 
   function recordIncorrect(): void {
-    totalWrong++;
-    wrongStreakCounter++;
-    correctStreakCounter = 0;
-    correctStreak = 0;
-    wrongStreak = Math.min(wrongStreakCounter, STREAK_THRESHOLD);
+    totalWrong++;                      // lifetime wrong count
+    wrongStreakCounter++;              // count toward next slow-down
+    correctStreakCounter = 0;          // break any correct streak
+    correctStreak = 0;                 // reset correct display
+    wrongStreak = Math.min(wrongStreakCounter, STREAK_THRESHOLD); // update display (capped)
 
     if (wrongStreakCounter === STREAK_THRESHOLD) {
+      // Player hit the wrong-streak target — slow down!
       // Original has NO cap here — interval increases indefinitely
       currentInterval = currentInterval + adaptationStep(currentInterval);
-      wrongStreakCounter = 0;
+      wrongStreakCounter = 0;          // reset for next streak cycle
     }
   }
 
@@ -494,6 +529,12 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   }
 
   // ── Digit loop ─────────────────────────────────────────────────────────
+  // The core game loop. Each call schedules the next digit after `delay` ms.
+  // Inside the timeout, the engine runs through 4 phases:
+  //   1. Validate the previous turn's answer (deferred checking)
+  //   2. Generate a new random digit and update history
+  //   3. Compute the expected answer for the NEXT turn (current + N-back)
+  //   4. Play audio (if voice mode) and schedule the next digit
 
   function scheduleNextDigit(delayMs?: number): void {
     if (phase !== 'active') return;
@@ -502,72 +543,71 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     digitTimer = setTimeout(() => {
       if (phase !== 'active') return;
 
-      // Reset streak display if at threshold
-      checkStreakReset();
-
-      // Check the previous answer (deferred)
-      checkPendingAnswer();
-
-      // Reset pending answer state
+      // ── Phase 1: Validate previous turn ──────────────────────────────
+      checkStreakReset();   // cap display streaks at threshold
+      checkPendingAnswer(); // evaluate the player's answer from the last turn
       pendingAnswer = undefined;
       lastResponseTime = 0;
 
-      // Generate new digit
-      const digit = generateDigit();
-      const newHistory = [...digitHistory, digit];
-      const nBackValue = determineNBack();
+      // ── Phase 2: Generate new digit ──────────────────────────────────
+      const digit = generateDigit();              // random 1-9
+      const newHistory = [...digitHistory, digit]; // append to ring buffer
+      const nBackValue = determineNBack();         // 1 or 2 (or random for variable mode)
 
-      // Trim history to keep it manageable
+      // Trim history: keep only nBackValue + 1 entries (current + what we compare against)
       while (newHistory.length > nBackValue + 1) newHistory.shift();
 
       digitHistory = newHistory;
-      currentDigit = digit;
-      digitGeneration++;
+      currentDigit = digit;     // update the displayed digit
+      digitGeneration++;        // bump counter so UI animations re-trigger
       currentNBack = nBackValue;
 
-      // Calculate expected answer for NEXT time
+      // ── Phase 3: Compute expected answer ─────────────────────────────
+      // Answer = current digit + the digit from nBackValue positions ago.
+      // If we don't have enough history yet, expectedAnswer = undefined (can't answer).
       expectedAnswer = newHistory.length > nBackValue
         ? digit + newHistory[newHistory.length - 1 - nBackValue]
         : undefined;
 
-      canAnswer = expectedAnswer !== undefined;
-      digitShownAt = Date.now();
+      canAnswer = expectedAnswer !== undefined; // enable/disable answer submission
+      digitShownAt = Date.now(); // stamp for response time measurement
 
-      // Play digit audio if voice mode
+      // ── Phase 4: Play audio (if voice mode) ──────────────────────────
       let audioDurationMs = 0;
-      audioPlayingId++;
+      audioPlayingId++; // bump monotonic ID so stale audio callbacks are ignored
       if (settings.useVoice) {
-        audioDurationMs = playDigitSound(digit);
+        audioDurationMs = playDigitSound(digit); // returns duration in ms
         isPlayingAudio = true;
-        notify();
+        notify(); // push state so UI shows playing indicator
 
-        // Track when audio actually ends
+        // Two safety timeouts clear isPlayingAudio after the audio duration.
+        // The monotonic audioPlayingId ensures only the latest audio's
+        // callbacks fire — stale callbacks from previous digits are no-ops.
         const currentId = audioPlayingId;
         const safetyTimeout = setTimeout(() => {
           if (audioPlayingId === currentId && isPlayingAudio) {
             isPlayingAudio = false;
             notify();
           }
-        }, audioDurationMs + 200);
+        }, audioDurationMs + 200); // +200ms buffer for decode latency
 
-        // Also try to detect actual end
         const ctx = getAudioContext();
-        // Safety: just use the buffer duration
-        clearTimeout(digitTimer as any); // clear any stale
+        clearTimeout(digitTimer as any); // clear any stale timer
         setTimeout(() => {
           if (audioPlayingId === currentId) {
             isPlayingAudio = false;
             notify();
           }
-        }, audioDurationMs + 100);
+        }, audioDurationMs + 100); // second safety net
       } else {
         isPlayingAudio = false;
         notify();
       }
 
-      notify();
+      notify(); // final state push for this digit cycle
 
-      // Schedule next digit: delay = currentInterval + audio duration
+      // Schedule next digit: base interval + audio playback time
+      // (next digit waits for current audio to finish playing)
       scheduleNextDigit(currentInterval + audioDurationMs);
     }, delay);
   }

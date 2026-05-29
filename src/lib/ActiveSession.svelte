@@ -9,11 +9,12 @@
     return engine.subscribe((s) => { state = s; });
   });
 
-  let selectedButton = $state<number | null>(null);
-  let keyValue = $state('');
-  let swipeActive = $state(false);
-  let lastTouchEndTime = $state(0);
-  let ringProgress = $state(201);
+  // ── UI state (local to this component, not part of engine) ─────────────
+  let selectedButton = $state<number | null>(null); // which keypad button is visually highlighted
+  let keyValue = $state('');       // current keyboard input value (text input mode)
+  let swipeActive = $state(false); // true while finger is down on the keypad (touch mode)
+  let lastTouchEndTime = $state(0); // timestamp of last touchend (suppresses synthetic click)
+  let ringProgress = $state(201);  // SVG circle stroke-dashoffset (201 = empty, 0 = full)
 
   // Derived primitives: Svelte 5 $effect tracks the whole `state` proxy, so any
   // notify() (including submitAnswer) re-runs the effect and restarts the ring.
