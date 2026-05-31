@@ -21,23 +21,23 @@
 
 <div class="flex flex-col justify-center grow gap-18">
   <div class="flex flex-col md:flex-row gap-18 items-center grow">
-    <!-- Duration field -->
-    <div class="flex flex-col items-start gap-6">
-      <span class="text-sm text-[#7e889c]">DURATION</span>
-      <div class="flex overflow-hidden rounded-xl">
-        <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.timer / 60).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleDuration(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
-        <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
-          {#each [5, 10, 15, 30, 60] as preset}
-            <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleDuration(preset)}>
-              <span class="#0f121a text-sm font-bold">{preset}</span>
-            </button>
-          {/each}
+    <!-- All three fields in one container -->
+    <div class="flex flex-col md:flex-row gap-9">
+      <!-- Duration -->
+      <div class="flex flex-col items-start gap-6">
+        <span class="text-sm text-[#7e889c]">DURATION</span>
+        <div class="flex overflow-hidden rounded-xl">
+          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.timer / 60).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleDuration(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+          <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
+            {#each [5, 10, 15, 30, 60] as preset}
+              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleDuration(preset)}>
+                <span class="#0f121a text-sm font-bold">{preset}</span>
+              </button>
+            {/each}
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Interval fields -->
-    <div class="flex flex-col md:flex-row gap-9">
       <!-- Starting interval -->
       <div class="flex flex-col items-start gap-6">
         <span class="text-sm text-[#7e889c]">STARTING INTERVAL</span>
