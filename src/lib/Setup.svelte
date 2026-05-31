@@ -1,15 +1,13 @@
 <script lang="ts">
   import type { Engine, GameState } from '$lib/engine';
-
   let { engine }: { engine: Engine } = $props();
   let state = $state<GameState>(engine.getState());
-
   $effect(() => {
     return engine.subscribe((s) => { state = s; });
   });
 
-  function selectDuration(minutes: number) {
-    engine.updateSettings({ timer: minutes * 60 });
+  function handleDuration(minutes: number) {
+    engine.updateSettings({ timer: Math.round(minutes * 60) });
   }
 
   function handleStartingInterval(val: number) {
@@ -23,15 +21,19 @@
 
 <div class="flex flex-col justify-center grow gap-18">
   <div class="flex flex-col md:flex-row gap-18 items-center grow">
-    <!-- Duration buttons -->
-    <div class="flex gap-6 justify-center items-center grow">
-      {#each [5, 10, 15] as duration}
-        {@const selected = state.settings.timer === duration * 60}
-        <button class="flex flex-col rounded-xl justify-center items-center gap-2 w-[80px] h-[80px] {selected ? 'bg-[#ffffff]' : 'cursor-pointer'}" onclick={() => selectDuration(duration)}>
-          <span class="text-2xl {selected ? 'text-[#090a0d] font-bold' : 'text-[#a9b4cc] font-medium'}">{duration}</span>
-          <span class="text-xs font-medium {selected ? 'text-[#090a0d]' : 'text-[#a9b4cc]'}">MINUTES</span>
-        </button>
-      {/each}
+    <!-- Duration field -->
+    <div class="flex flex-col items-start gap-6">
+      <span class="text-sm text-[#7e889c]">DURATION</span>
+      <div class="flex overflow-hidden rounded-xl">
+        <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.timer / 60).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleDuration(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+        <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
+          {#each [5, 10, 15, 30, 60] as preset}
+            <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleDuration(preset)}>
+              <span class="#0f121a text-sm font-bold">{preset}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
     </div>
 
     <!-- Interval fields -->
