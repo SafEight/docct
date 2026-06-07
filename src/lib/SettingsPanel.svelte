@@ -108,6 +108,33 @@
 
     <div class="my-1 h-px bg-[#7e889c]"></div>
 
+    <!-- Wrong sound effect label -->
+    <div class="px-3 py-2">
+      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Wrong answer sound</span>
+    </div>
+
+    <!-- Wrong sound: Beep -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.wrongSound === 'beep' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ wrongSound: 'beep' })}>
+      <span class="font-medium {state.settings.wrongSound === 'beep' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Beep</span>
+      {#if state.settings.wrongSound === 'beep'}
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
+
+    <!-- Wrong sound: Fart -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.wrongSound === 'fart' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ wrongSound: 'fart' })}>
+      <span class="font-medium {state.settings.wrongSound === 'fart' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Fart 💨</span>
+      {#if state.settings.wrongSound === 'fart'}
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
+
+    <div class="my-1 h-px bg-[#7e889c]"></div>
+
     <!-- View instructions -->
     <button class="group flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000]" onclick={() => { engine.showOnboarding(); close(); }}>
       <span class="font-medium text-[#090a0d] group-hover:text-[#a9b4cc]">View instructions</span>

@@ -9,6 +9,7 @@ export interface GameSettings {
   useKeypad: boolean;
   voicePack: 'rose' | 'rose_fast' | 'jenny';
   beepOnIncorrect: boolean;
+  wrongSound: 'beep' | 'fart'; // sound effect for wrong answers
   startingInterval: number;   // ms (3000)
   minimumInterval: number;    // ms (500)
   onboardingCompleted: boolean;
@@ -96,6 +97,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   useKeypad: true,
   voicePack: 'rose',
   beepOnIncorrect: false,
+  wrongSound: 'beep',
   startingInterval: 3000,
   minimumInterval: 500,
   onboardingCompleted: false,
@@ -121,6 +123,7 @@ function loadSettingsFromStorage(): GameSettings {
         useKeypad: !!parsed.useKeypad,
         voicePack: ['rose', 'rose_fast', 'jenny'].includes(parsed.voicePack) ? String(parsed.voicePack) : DEFAULT_SETTINGS.voicePack,
         beepOnIncorrect: !!parsed.beepOnIncorrect,
+        wrongSound: ['beep', 'fart'].includes(parsed.wrongSound) ? parsed.wrongSound : DEFAULT_SETTINGS.wrongSound,
         startingInterval: Number(parsed.startingInterval) || DEFAULT_SETTINGS.startingInterval,
         minimumInterval: Number(parsed.minimumInterval) || DEFAULT_SETTINGS.minimumInterval,
         onboardingCompleted: !!parsed.onboardingCompleted,
@@ -314,6 +317,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   let audioContext: AudioContext | null = null;
   let voiceBuffers: (AudioBuffer | null)[] = new Array(9).fill(null);
   let beepBuffer: AudioBuffer | null = null;
+  let fartBuffers: (AudioBuffer | null)[] = []; // 3 fart sound variations
   let loadedVoicePack: string = '';
   let audioPlayingId = 0;     // monotonic ID to track which audio is current
   let preloadVersion = 0;     // monotonic ID for voice pack preload race condition
@@ -376,6 +380,23 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     } catch { /* ignore */ }
   }
 
+  async function preloadFarts(): Promise<void> {
+    if (fartBuffers.length > 0 && fartBuffers.every(b => b !== null)) return;
+    const ctx = getAudioContext();
+    const buffers: (AudioBuffer | null)[] = [];
+    for (let i = 1; i <= 3; i++) {
+      try {
+        const response = await fetch(`/farts/fart${i}.mp3`);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        buffers.push(audioBuffer);
+      } catch {
+        buffers.push(null);
+      }
+    }
+    fartBuffers = buffers;
+  }
+
   function playDigitSound(digit: number): number {
     const ctx = getAudioContext();
     const buffer = voiceBuffers[digit - 1];
@@ -394,6 +415,27 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     const source = ctx.createBufferSource();
     source.buffer = beepBuffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  }
+
+  function playWrongSound(): void {
+    if (settings.wrongSound === 'fart') {
+      playFartSound();
+    } else {
+      playBeepSound();
+    }
+  }
+
+  function playFartSound(): void {
+    const ctx = getAudioContext();
+    // Filter out null buffers and pick a random one
+    const available = fartBuffers.filter((b): b is AudioBuffer => b !== null);
+    if (available.length === 0) return;
+    const buffer = available[Math.floor(Math.random() * available.length)];
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
     source.connect(ctx.destination);
     source.start(0);
   }
@@ -468,7 +510,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     if (pendingAnswer === undefined) {
       lastAnswerCorrect = false;
       recordIncorrect();
-      if (settings.beepOnIncorrect) playBeepSound();
+      if (settings.beepOnIncorrect) playWrongSound();
       return;
     }
 
@@ -482,7 +524,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     // Wrong answer
     lastAnswerCorrect = false;
     recordIncorrect();
-    if (settings.beepOnIncorrect) playBeepSound();
+    if (settings.beepOnIncorrect) playWrongSound();
   }
 
   // ── Score recording ────────────────────────────────────────────────────
@@ -725,6 +767,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       Promise.all([
         preloadVoicePack(settings.voicePack),
         preloadBeep(),
+        preloadFarts(),
       ]).then(() => {
         if (phase === 'active') {
           // Set navigator.audioSession for mobile
