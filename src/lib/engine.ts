@@ -8,8 +8,7 @@ export interface GameSettings {
   useVoice: boolean;
   useKeypad: boolean;
   voicePack: 'rose' | 'rose_fast' | 'jenny';
-  beepOnIncorrect: boolean;
-  wrongSound: 'beep' | 'fart'; // sound effect for wrong answers
+  wrongSound: 'none' | 'beep' | 'fart'; // sound effect for wrong answers
   startingInterval: number;   // ms (3000)
   minimumInterval: number;    // ms (500)
   onboardingCompleted: boolean;
@@ -96,7 +95,6 @@ const DEFAULT_SETTINGS: GameSettings = {
   useVoice: true,
   useKeypad: true,
   voicePack: 'rose',
-  beepOnIncorrect: false,
   wrongSound: 'beep',
   startingInterval: 3000,
   minimumInterval: 500,
@@ -122,8 +120,7 @@ function loadSettingsFromStorage(): GameSettings {
         useVoice: !!parsed.useVoice,
         useKeypad: !!parsed.useKeypad,
         voicePack: ['rose', 'rose_fast', 'jenny'].includes(parsed.voicePack) ? String(parsed.voicePack) : DEFAULT_SETTINGS.voicePack,
-        beepOnIncorrect: !!parsed.beepOnIncorrect,
-        wrongSound: ['beep', 'fart'].includes(parsed.wrongSound) ? parsed.wrongSound : DEFAULT_SETTINGS.wrongSound,
+        wrongSound: ['none', 'beep', 'fart'].includes(parsed.wrongSound) ? parsed.wrongSound : DEFAULT_SETTINGS.wrongSound,
         startingInterval: Number(parsed.startingInterval) || DEFAULT_SETTINGS.startingInterval,
         minimumInterval: Number(parsed.minimumInterval) || DEFAULT_SETTINGS.minimumInterval,
         onboardingCompleted: !!parsed.onboardingCompleted,
@@ -510,7 +507,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     if (pendingAnswer === undefined) {
       lastAnswerCorrect = false;
       recordIncorrect();
-      if (settings.beepOnIncorrect) playWrongSound();
+      if (settings.wrongSound !== 'none') playWrongSound();
       return;
     }
 
@@ -524,7 +521,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     // Wrong answer
     lastAnswerCorrect = false;
     recordIncorrect();
-    if (settings.beepOnIncorrect) playWrongSound();
+    if (settings.wrongSound !== 'none') playWrongSound();
   }
 
   // ── Score recording ────────────────────────────────────────────────────

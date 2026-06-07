@@ -100,18 +100,20 @@
 
     <div class="my-1 h-px bg-[#7e889c]"></div>
 
-    <!-- Beep toggle -->
-    <button class="group flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left hover:bg-[#000000]" onclick={() => engine.updateSettings({ beepOnIncorrect: !state.settings.beepOnIncorrect })}>
-      <span class="font-medium text-[#090a0d] group-hover:text-[#a9b4cc]">Beep on wrong answer</span>
-      <span class="text-sm font-semibold {state.settings.beepOnIncorrect ? 'text-[#10b981]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">{state.settings.beepOnIncorrect ? 'On' : 'Off'}</span>
-    </button>
-
-    <div class="my-1 h-px bg-[#7e889c]"></div>
-
-    <!-- Wrong sound effect label -->
+    <!-- Wrong answer sound label -->
     <div class="px-3 py-2">
       <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Wrong answer sound</span>
     </div>
+
+    <!-- Wrong sound: None -->
+    <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.wrongSound === 'none' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ wrongSound: 'none' })}>
+      <span class="font-medium {state.settings.wrongSound === 'none' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">None</span>
+      {#if state.settings.wrongSound === 'none'}
+        <span class="text-sm font-semibold text-[#10b981]">&bull;</span>
+      {:else}
+        <span>&bull;</span>
+      {/if}
+    </button>
 
     <!-- Wrong sound: Beep -->
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.wrongSound === 'beep' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ wrongSound: 'beep' })}>
