@@ -314,7 +314,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   let audioContext: AudioContext | null = null;
   let voiceBuffers: (AudioBuffer | null)[] = new Array(9).fill(null);
   let beepBuffer: AudioBuffer | null = null;
-  let fartBuffers: (AudioBuffer | null)[] = []; // 3 fart sound variations
+  let fartBuffers: (AudioBuffer | null)[] = []; // 8 fart sound variations
   let loadedVoicePack: string = '';
   let audioPlayingId = 0;     // monotonic ID to track which audio is current
   let preloadVersion = 0;     // monotonic ID for voice pack preload race condition
@@ -381,7 +381,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     if (fartBuffers.length > 0 && fartBuffers.every(b => b !== null)) return;
     const ctx = getAudioContext();
     const buffers: (AudioBuffer | null)[] = [];
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 8; i++) {
       try {
         const response = await fetch(`/farts/fart${i}.mp3`);
         const arrayBuffer = await response.arrayBuffer();
