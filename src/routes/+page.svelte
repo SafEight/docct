@@ -120,6 +120,14 @@
       </div>
     </div>
 
+    <!-- Mobile floating settings button (always visible on mobile) -->
+    <button aria-label="Open settings" class="fixed bottom-4 right-4 z-30 flex h-[48px] w-[48px] cursor-pointer items-center justify-center rounded-full bg-[#a9b4cc] shadow-lg md:hidden" onclick={() => settingsOpen = !settingsOpen}>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#090a0d" viewBox="0 0 256 256"><path d="M230.52,126.06,211.9,110.5c.09-1.5.1-3,.1-4.5s0-3-.1-4.5l18.62-15.56a8,8,0,0,0,2-10.13l-16-27.71a8,8,0,0,0-9.8-3.47l-23.22,9.35a77.87,77.87,0,0,0-7.8-4.5L172,23.54A8,8,0,0,0,164.13,16H131.87A8,8,0,0,0,124,23.54l-3.68,25.94a77.87,77.87,0,0,0-7.8,4.5L89.3,44.63a8,8,0,0,0-9.8,3.47l-16,27.71a8,8,0,0,0,2,10.13L84.1,101.5c-.09,1.5-.1,3-.1,4.5s0,3,.1,4.5L65.48,126.06a8,8,0,0,0-2,10.13l16,27.71a8,8,0,0,0,9.8,3.47l23.22,9.35a77.87,77.87,0,0,0,7.8,4.5L124,188.46a8,8,0,0,0,7.87,7.54h32.26a8,8,0,0,0,7.87-7.54l3.68-25.94a77.87,77.87,0,0,0,7.8-4.5l23.22,9.35a8,8,0,0,0,9.8-3.47l16-27.71A8,8,0,0,0,230.52,126.06ZM148,128a20,20,0,1,1-20-20A20,20,0,0,1,148,128Z"></path></svg>
+    </button>
+    {#if settingsOpen}
+      <SettingsPanel {engine} close={() => settingsOpen = false} mobileFloating />
+    {/if}
+
     <!-- Content area -->
     <div class="flex grow">
       <div class="flex grow md:pb-[122px] md:justify-center">
