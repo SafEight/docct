@@ -231,6 +231,21 @@ describe('Answer checking — 1-back', () => {
     expect(e.getState().totalAnswers).toBe(1);
     e.dispose();
   });
+
+  it('accepts correct answers with default voice timing and wrongSound=fart', async () => {
+    const e = createEngine(makeSettings({ taskMode: '1-back', useVoice: true, startingInterval: 100, wrongSound: 'fart' }));
+    await startEngine(e); // 1st digit
+    vi.advanceTimersByTime(e.getState().currentInterval + 100); // 2nd digit after voice duration
+
+    const h = e.getState().digitHistory;
+    e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    vi.advanceTimersByTime(e.getState().currentInterval + 100); // triggers check
+
+    expect(e.getState().lastAnswerCorrect).toBe(true);
+    expect(e.getState().totalCorrect).toBe(1);
+    expect(e.getState().totalAnswers).toBe(1);
+    e.dispose();
+  });
 });
 
 // ── 2-back answer checking ─────────────────────────────────────────────────

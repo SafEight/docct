@@ -13,7 +13,9 @@
   let selectedButton = $state<number | null>(null); // which keypad button is visually highlighted
   let keyValue = $state('');       // current keyboard input value (text input mode)
   let swipeActive = $state(false); // true while finger is down on the keypad (touch mode)
+  let lastTouchStartTime = $state(0); // timestamp of last touchstart (guards stale stuck touches)
   let lastTouchEndTime = $state(0); // timestamp of last touchend (suppresses synthetic click)
+  let touchFailsafeTimer: ReturnType<typeof setTimeout> | null = null;
   let ringProgress = $state(201);  // SVG circle stroke-dashoffset (201 = empty, 0 = full)
 
   // Derived primitives: Svelte 5 $effect tracks the whole `state` proxy, so any
@@ -69,9 +71,27 @@
     return null;
   }
 
+  function endSwipe() {
+    swipeActive = false;
+    lastTouchEndTime = Date.now();
+    if (touchFailsafeTimer) {
+      clearTimeout(touchFailsafeTimer);
+      touchFailsafeTimer = null;
+    }
+  }
+
   function handleKeypadTouchStart(answer: number, e: TouchEvent) {
     e.preventDefault();
     swipeActive = true;
+    lastTouchStartTime = Date.now();
+    if (touchFailsafeTimer) clearTimeout(touchFailsafeTimer);
+    // Mobile browsers can drop touchend/touchcancel when a gesture is
+    // interrupted. If swipeActive gets stuck, the new-digit effect keeps
+    // re-submitting the old selected button and every answer looks wrong.
+    touchFailsafeTimer = setTimeout(() => {
+      swipeActive = false;
+      touchFailsafeTimer = null;
+    }, 750);
     selectedButton = answer;
     engine.submitAnswer(answer);
   }
@@ -90,8 +110,7 @@
 
   function handleKeypadTouchEnd(e: TouchEvent) {
     if (!swipeActive) return;
-    swipeActive = false;
-    lastTouchEndTime = Date.now();
+    endSwipe();
     // Already submitted in touchstart/touchmove — nothing more to do.
   }
 
@@ -162,7 +181,8 @@
   // Clear selection when new digit arrives.
   // If the user's finger is still on a button (swipeActive), re-submit that
   // answer instead of clearing — otherwise the held button goes unregistered
-  // and the turn is marked wrong.
+  // and the turn is marked wrong. Guard with a short freshness window so a
+  // missed touchend/touchcancel cannot keep submitting stale answers forever.
   // Uses untrack() for swipeActive/selectedButton so the effect ONLY re-runs
   // on currentDigit changes — not on every notify() → state replacement, which
   // would clear the highlight mid-press.
@@ -170,10 +190,12 @@
     currentDigit; // only tracked dependency
     const swiping = untrack(() => swipeActive);
     const selected = untrack(() => selectedButton);
-    if (swiping && selected !== null) {
+    const touchAge = Date.now() - untrack(() => lastTouchStartTime);
+    if (swiping && selected !== null && touchAge < 750) {
       // Finger still down on a button — re-submit for the new turn
       engine.submitAnswer(selected);
     } else {
+      if (swiping && touchAge >= 750) endSwipe();
       selectedButton = null;
     }
     keyValue = '';
@@ -241,6 +263,7 @@
         style="touch-action: none;"
         ontouchmove={handleKeypadTouchMove}
         ontouchend={handleKeypadTouchEnd}
+        ontouchcancel={handleKeypadTouchEnd}
       >
         <div class="flex flex-col gap-3 overflow-hidden">
           <!-- Row 1: digit/speaker + 2,3 | 4,5,6 -->
