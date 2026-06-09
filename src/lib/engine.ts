@@ -609,7 +609,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
         : undefined;
 
       canAnswer = expectedAnswer !== undefined; // enable/disable answer submission
-      digitShownAt = Date.now(); // stamp for response time measurement
+      digitShownAt = performance.now(); // stamp for response time measurement
 
       // ── Phase 4: Play audio (if voice mode) ──────────────────────────
       let audioDurationMs = 0;

@@ -70,7 +70,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     useVoice: false,   // disabled in tests: avoids audio duration affecting tick timing
     useKeypad: true,
     voicePack: 'rose',
-    beepOnIncorrect: false,
+    wrongSound: 'none',
     startingInterval: 3000,
     minimumInterval: 500,
     onboardingCompleted: true,
@@ -216,6 +216,21 @@ describe('Answer checking — 1-back', () => {
     expect(e.getState().totalCorrect).toBe(2);
     e.dispose();
   });
+
+  it('accepts correct answers when wrongSound is fart', async () => {
+    const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100, wrongSound: 'fart' }));
+    await startEngine(e); // 1st digit
+    tickDigit(e); // 2nd → can answer
+
+    const h = e.getState().digitHistory;
+    e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    tickDigit(e); // triggers check
+
+    expect(e.getState().lastAnswerCorrect).toBe(true);
+    expect(e.getState().totalCorrect).toBe(1);
+    expect(e.getState().totalAnswers).toBe(1);
+    e.dispose();
+  });
 });
 
 // ── 2-back answer checking ─────────────────────────────────────────────────
@@ -293,12 +308,12 @@ describe('Answer checking — variable mode', () => {
 // ── Interval adaptation ────────────────────────────────────────────────────
 
 describe('Interval adaptation', () => {
-  it('decreases after 4 correct answers (STREAK_THRESHOLD=4)', async () => {
+  it('decreases after 3 correct answers (STREAK_THRESHOLD=3)', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
     await startEngine(e); // 1st digit fires
 
-    // Need 4 correct answers to trigger interval decrease
-    for (let i = 0; i < 4; i++) {
+    // Need 3 correct answers to trigger interval decrease
+    for (let i = 0; i < 3; i++) {
       tickDigit(e);
       const h = e.getState().digitHistory;
       e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
@@ -306,25 +321,25 @@ describe('Interval adaptation', () => {
     tickDigit(e); // check last answer
 
     const s = e.getState();
-    expect(s.currentInterval).toBe(2880); // 3000 - 120 (step at 3.0s = 120ms)
+    expect(s.currentInterval).toBe(2750); // 3000 - 250 (step at 3.0s = round(3000/12))
     e.dispose();
   });
 
-  it('interval increases after 4 wrong answers (STREAK_THRESHOLD)', async () => {
+  it('interval increases after 3 wrong answers (STREAK_THRESHOLD)', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
     await startEngine(e);
 
-    // Decrease interval by getting 4 correct (STREAK_THRESHOLD=4)
-    for (let i = 0; i < 4; i++) {
+    // Decrease interval by getting 3 correct (STREAK_THRESHOLD=3)
+    for (let i = 0; i < 3; i++) {
       tickDigit(e);
       const h = e.getState().digitHistory;
       e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
     }
-    tickDigit(e); // trigger check of 4th answer
-    expect(e.getState().currentInterval).toBe(2880); // 3000 - 120
+    tickDigit(e); // trigger check of 3rd answer
+    expect(e.getState().currentInterval).toBe(2750); // 3000 - 250
 
-    // Submit 4 wrong answers to trigger interval increase
-    for (let i = 0; i < 4; i++) {
+    // Submit 3 wrong answers to trigger interval increase
+    for (let i = 0; i < 3; i++) {
       e.submitAnswer(9999);
       tickDigit(e); // trigger check
     }
@@ -332,8 +347,8 @@ describe('Interval adaptation', () => {
     tickDigit(e);
 
     const s = e.getState();
-    // 2880 + round(2880/25) = 2880 + 115 = 2995
-    expect(s.currentInterval).toBe(2995);
+    // 2750 + round(2750/12) = 2750 + 229 = 2979
+    expect(s.currentInterval).toBe(2979);
     e.dispose();
   });
 
