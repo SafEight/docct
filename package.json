@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:offline": "npm run build && python3 scripts/build-offline-package.py",
     "preview": "vite preview",
     "test": "vitest run"
   },
