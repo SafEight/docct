@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "build:offline": "npm run build && python3 scripts/build-offline-package.py",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -15,7 +14,6 @@
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tailwindcss/vite": "^4.3.0",
-    "puppeteer": "^25.1.0",
     "svelte": "^5.0.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.0.0",
