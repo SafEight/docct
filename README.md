@@ -8,7 +8,56 @@ I did not look at any of the code, so proceed at your own risk.
 - Accent color changed to emerald green
 - Set custom session duration (type any number, not just 5/10/15 min presets)
 - More aggressive difficulty curve, so interval adapts faster, displayed with 2-decimal precision
-- Wrong-answer sound options: None / Beep / Fart 💨 (8 random variations)
-- Added Fart option to wrong-answer sounds in case beep wasn't annoying enough. 
+- Wrong-answer sound options: None / Beep / Fart 💨 (8 random variations) — in case beep wasn't annoying enough
 - Progress ring fills up to the next digit in visual mode
 - Mobile keypad supports swipe-to-select (drag and release) instead of individual taps
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+ and npm
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+## Build
+
+```bash
+npm install
+npm run build
+```
+
+Static output is written to `build/`. Serve it with any static file server, e.g.:
+
+```bash
+npx serve build
+```
+
+## Docker
+
+```bash
+docker build -t docct .
+docker run -p 8080:80 docct
+```
+
+Open `http://localhost:8080`.
+
+## Tests
+
+```bash
+npm install
+npm test
+```
+
+## Tech Stack
+
+- SvelteKit (Svelte 5 runes)
+- Tailwind CSS v4
+- Chart.js
+- TypeScript
+- Vitest
