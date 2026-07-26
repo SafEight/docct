@@ -4,7 +4,7 @@
 Single-page SvelteKit app (Svelte 5 runes). Client-side only. No backend. No routing.
 All state in Svelte runes ($state, $derived, $effect). Settings in localStorage key "settings".
 
-Project: `.`
+Project: DOCCT — cognitive control training game
 Layout: SvelteKit project with Tailwind CSS v4.
 
 ## Color Palette (exact hex values)
