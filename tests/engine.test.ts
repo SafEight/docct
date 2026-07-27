@@ -73,6 +73,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     wrongSound: 'none',
     startingInterval: 3000,
     minimumInterval: 500,
+    intervalMode: 'adaptive',
     onboardingCompleted: true,
     taskMode: '1-back',
     ...overrides,
@@ -413,6 +414,53 @@ describe('Interval adaptation', () => {
     expect(e.getState().wrongStreak).toBe(0);
     e.dispose();
   });
+
+  it('keeps a fixed interval after a correct streak', async () => {
+    const e = createEngine(makeSettings({
+      taskMode: '1-back',
+      intervalMode: 'fixed',
+      startingInterval: 500,
+      minimumInterval: 500,
+    }));
+    await startEngine(e);
+
+    for (let i = 0; i < 3; i++) {
+      tickDigit(e);
+      const h = e.getState().digitHistory;
+      e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    }
+    tickDigit(e);
+
+    expect(e.getState().totalCorrect).toBe(3);
+    expect(e.getState().currentInterval).toBe(500);
+    e.dispose();
+  });
+
+  it('keeps a fixed interval after a wrong streak', async () => {
+    const e = createEngine(makeSettings({
+      taskMode: '1-back',
+      intervalMode: 'fixed',
+      startingInterval: 500,
+      minimumInterval: 500,
+    }));
+    await startEngine(e);
+    tickDigit(e); // enough history to answer
+
+    for (let i = 0; i < 3; i++) {
+      e.submitAnswer(9999);
+      tickDigit(e);
+    }
+
+    expect(e.getState().wrongStreak).toBe(3);
+    expect(e.getState().currentInterval).toBe(500);
+
+    e.stop();
+    expect(e.getState().sessionResults?.intervalMode).toBe('fixed');
+    const highScores = JSON.parse(localStorage.getItem('highScores')!);
+    expect(highScores['1-back:fixed']).toBeDefined();
+    expect(highScores['1-back']).toBeUndefined();
+    e.dispose();
+  });
 });
 
 // ── Timer countdown ────────────────────────────────────────────────────────
@@ -540,6 +588,17 @@ describe('Settings persistence', () => {
     expect(s.startingInterval).toBe(5000);
     expect(s.minimumInterval).toBe(300);
     expect(s.onboardingCompleted).toBe(true);
+    expect(s.intervalMode).toBe('adaptive');
+    e.dispose();
+  });
+
+  it('persists fixed interval pacing', () => {
+    const e = createEngine(makeSettings({ onboardingCompleted: true }));
+    e.updateSettings({ intervalMode: 'fixed', startingInterval: 500 });
+
+    const raw = JSON.parse(localStorage.getItem('settings')!);
+    expect(raw.intervalMode).toBe('fixed');
+    expect(raw.startingInterval).toBe(500);
     e.dispose();
   });
 

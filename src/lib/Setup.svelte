@@ -19,55 +19,84 @@
   function handleMinimumInterval(val: number) {
     engine.updateSettings({ minimumInterval: val * 1000 });
   }
+
+  function handleIntervalMode(intervalMode: 'adaptive' | 'fixed') {
+    engine.updateSettings({ intervalMode });
+  }
 </script>
 
 <div class="flex flex-col justify-center grow gap-18">
   <div class="flex flex-col md:flex-row gap-18 items-center grow">
-    <!-- All three fields in one container -->
-    <div class="flex flex-col md:flex-row gap-9">
-      <!-- Duration -->
-      <div class="flex flex-col items-start gap-6">
-        <span class="text-sm text-[#7e889c]">DURATION</span>
-        <div class="flex overflow-hidden rounded-xl">
-          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.timer / 60).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleDuration(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
-          <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
-            {#each [5, 10, 15, 30, 60] as preset}
-              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleDuration(preset)}>
-                <span class="#0f121a text-sm font-bold">{preset}</span>
-              </button>
-            {/each}
-          </div>
+    <div class="flex flex-col gap-9">
+      <!-- Pacing is independent from the Regular / 2-back / Variable task mode. -->
+      <div class="flex flex-col items-start gap-3">
+        <span class="text-sm text-[#7e889c]">PACING</span>
+        <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Interval pacing">
+          <button
+            type="button"
+            aria-pressed={state.settings.intervalMode === 'adaptive'}
+            class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.intervalMode === 'adaptive' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
+            onclick={() => handleIntervalMode('adaptive')}
+          >Adaptive</button>
+          <button
+            type="button"
+            aria-pressed={state.settings.intervalMode === 'fixed'}
+            class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.intervalMode === 'fixed' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
+            onclick={() => handleIntervalMode('fixed')}
+          >Fixed</button>
         </div>
+        <span class="text-xs text-[#7e889c]">
+          {state.settings.intervalMode === 'adaptive' ? 'Changes with your performance' : 'Stays at the selected interval'}
+        </span>
       </div>
 
-      <!-- Starting interval -->
-      <div class="flex flex-col items-start gap-6">
-        <span class="text-sm text-[#7e889c]">STARTING INTERVAL</span>
-        <div class="flex overflow-hidden rounded-xl">
-          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.startingInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleStartingInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
-          <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
-            {#each [0.5, 1, 2, 3, 5] as preset}
-              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleStartingInterval(preset)}>
-                <span class="#0f121a text-sm font-bold">{preset}</span>
-              </button>
-            {/each}
+      <div class="flex flex-col md:flex-row gap-9">
+        <!-- Duration -->
+        <div class="flex flex-col items-start gap-6">
+          <span class="text-sm text-[#7e889c]">DURATION</span>
+          <div class="flex overflow-hidden rounded-xl">
+            <input aria-label="Duration in minutes" class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.timer / 60).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleDuration(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+            <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
+              {#each [5, 10, 15, 30, 60] as preset}
+                <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleDuration(preset)}>
+                  <span class="text-[#0f121a] text-sm font-bold">{preset}</span>
+                </button>
+              {/each}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Minimum interval -->
-      <div class="flex flex-col items-start gap-6">
-        <span class="text-sm text-[#7e889c]">MINIMUM INTERVAL</span>
-        <div class="flex overflow-hidden rounded-xl">
-          <input class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.minimumInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleMinimumInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
-          <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
-            {#each [0.5, 1, 2, 3, 5] as preset}
-              <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleMinimumInterval(preset)}>
-                <span class="#0f121a text-sm font-bold">{preset}</span>
-              </button>
-            {/each}
+        <!-- Starting interval becomes the only interval in Fixed pacing. -->
+        <div class="flex flex-col items-start gap-6">
+          <span class="text-sm text-[#7e889c]">{state.settings.intervalMode === 'fixed' ? 'INTERVAL' : 'STARTING INTERVAL'}</span>
+          <div class="flex overflow-hidden rounded-xl">
+            <input aria-label={state.settings.intervalMode === 'fixed' ? 'Fixed interval in seconds' : 'Starting interval in seconds'} class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.startingInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleStartingInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+            <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
+              {#each [0.5, 1, 2, 3, 5] as preset}
+                <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleStartingInterval(preset)}>
+                  <span class="text-[#0f121a] text-sm font-bold">{preset}</span>
+                </button>
+              {/each}
+            </div>
           </div>
         </div>
+
+        {#if state.settings.intervalMode === 'adaptive'}
+          <!-- Minimum interval only applies while pacing adapts. -->
+          <div class="flex flex-col items-start gap-6">
+            <span class="text-sm text-[#7e889c]">MINIMUM INTERVAL</span>
+            <div class="flex overflow-hidden rounded-xl">
+              <input aria-label="Minimum interval in seconds" class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.minimumInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleMinimumInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+              <div class="flex gap-2 bg-[#0f121a] p-2 pl-0">
+                {#each [0.5, 1, 2, 3, 5] as preset}
+                  <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md" onmousedown={(e) => e.preventDefault()} onclick={() => handleMinimumInterval(preset)}>
+                    <span class="text-[#0f121a] text-sm font-bold">{preset}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
   </div>

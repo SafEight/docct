@@ -9,7 +9,8 @@ I did not look at any of the code, so proceed at your own risk.
 
 - Accent color changed to emerald green
 - Set custom session duration (type any number, not just 5/10/15 min presets)
-- More aggressive difficulty curve, so interval adapts faster, displayed with 2-decimal precision
+- Fixed pacing mode keeps the selected interval constant, regardless of correct or wrong streaks
+- More aggressive adaptive difficulty curve, so interval changes faster and is displayed with 2-decimal precision
 - Wrong-answer sound options: None / Beep / Fart 💨 (8 random variations) — in case beep wasn't annoying enough
 - Progress ring fills up to the next digit in visual mode
 - Mobile keypad supports swipe-to-select (drag and release) instead of individual taps

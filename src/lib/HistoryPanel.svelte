@@ -148,7 +148,9 @@
           <div class="bg-[#121621] rounded-xl p-4 flex flex-col gap-2">
             <div class="flex items-center justify-between">
               <span class="text-[#7e889c] text-xs">{formatDate(session.completedAt)}</span>
-              <span class="text-[#a9b4cc] text-xs px-2 py-0.5 rounded-md bg-[#0f121a]">{session.mode}</span>
+              <span class="text-[#a9b4cc] text-xs px-2 py-0.5 rounded-md bg-[#0f121a]">
+                {session.mode} · {session.intervalMode === 'fixed' ? 'Fixed' : 'Adaptive'}
+              </span>
             </div>
             <div class="flex items-center gap-4">
               <div class="flex flex-col">

@@ -25,7 +25,11 @@
     return { fastest: 0, mostStreaks: 0, mostCorrect: 0 };
   }
 
-  const bestScores = $derived(getBestScores(session?.mode || state.settings.taskMode));
+  const bestScores = $derived(getBestScores(
+    session?.intervalMode === 'fixed'
+      ? `${session.mode}:fixed`
+      : (session?.mode || state.settings.taskMode)
+  ));
 
   // Positive change = improvement (green up arrow)
   // For accuracy/streaks: higher is better

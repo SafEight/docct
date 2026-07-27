@@ -11,6 +11,7 @@ export interface GameSettings {
   wrongSound: 'none' | 'beep' | 'fart'; // sound effect for wrong answers
   startingInterval: number;   // ms (3000)
   minimumInterval: number;    // ms (500)
+  intervalMode: 'adaptive' | 'fixed';
   onboardingCompleted: boolean;
   taskMode: '1-back' | '2-back' | 'variable';
 }
@@ -18,6 +19,7 @@ export interface GameSettings {
 export interface SessionResult {
   completedAt: string;
   mode: string;
+  intervalMode: 'adaptive' | 'fixed';
   durationSec: number;
   accuracy: number;           // 0-1
   fastestIntervalMs: number;
@@ -98,6 +100,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   wrongSound: 'beep',
   startingInterval: 3000,
   minimumInterval: 500,
+  intervalMode: 'adaptive',
   onboardingCompleted: false,
   taskMode: '1-back',
 };
@@ -123,6 +126,7 @@ function loadSettingsFromStorage(): GameSettings {
         wrongSound: ['none', 'beep', 'fart'].includes(parsed.wrongSound) ? parsed.wrongSound : DEFAULT_SETTINGS.wrongSound,
         startingInterval: Number(parsed.startingInterval) || DEFAULT_SETTINGS.startingInterval,
         minimumInterval: Number(parsed.minimumInterval) || DEFAULT_SETTINGS.minimumInterval,
+        intervalMode: parsed.intervalMode === 'fixed' ? 'fixed' : 'adaptive',
         onboardingCompleted: !!parsed.onboardingCompleted,
         taskMode: ['1-back', '2-back', 'variable'].includes(parsed.taskMode) ? parsed.taskMode : DEFAULT_SETTINGS.taskMode,
       };
@@ -150,7 +154,9 @@ function validateSessionResult(entry: any): SessionResult | null {
     return null;
   }
   return {
-    completedAt, mode, durationSec, accuracy, fastestIntervalMs, endingIntervalMs, streaks,
+    completedAt, mode,
+    intervalMode: entry.intervalMode === 'fixed' ? 'fixed' : 'adaptive',
+    durationSec, accuracy, fastestIntervalMs, endingIntervalMs, streaks,
     useVoice: !!entry.useVoice, useKeypad: !!entry.useKeypad,
     averageResponseTimeMs: Number(entry.averageResponseTimeMs) || 0,
     correctCount: Number(entry.correctCount) || 0,
@@ -536,11 +542,13 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     correctStreak = Math.min(correctStreakCounter, STREAK_THRESHOLD); // update display (capped)
 
     if (correctStreakCounter === STREAK_THRESHOLD) {
-      // Player hit the streak target — speed up!
       longestStreakCount++;            // count completed streaks for high score
-      const step = adaptationStep(currentInterval);
-      currentInterval = Math.max(settings.minimumInterval, currentInterval - step);
-      fastestInterval = Math.min(fastestInterval, currentInterval);
+      if (settings.intervalMode === 'adaptive') {
+        // Player hit the streak target — speed up!
+        const step = adaptationStep(currentInterval);
+        currentInterval = Math.max(settings.minimumInterval, currentInterval - step);
+        fastestInterval = Math.min(fastestInterval, currentInterval);
+      }
       correctStreakCounter = 0;        // reset for next streak cycle
     }
   }
@@ -553,9 +561,11 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     wrongStreak = Math.min(wrongStreakCounter, STREAK_THRESHOLD); // update display (capped)
 
     if (wrongStreakCounter === STREAK_THRESHOLD) {
-      // Player hit the wrong-streak target — slow down!
-      // Original has NO cap here — interval increases indefinitely
-      currentInterval = currentInterval + adaptationStep(currentInterval);
+      if (settings.intervalMode === 'adaptive') {
+        // Player hit the wrong-streak target — slow down!
+        // Original has NO cap here — interval increases indefinitely
+        currentInterval = currentInterval + adaptationStep(currentInterval);
+      }
       wrongStreakCounter = 0;          // reset for next streak cycle
     }
   }
@@ -685,6 +695,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     sessionResults = {
       completedAt: new Date().toISOString(),
       mode: settings.taskMode,
+      intervalMode: settings.intervalMode,
       durationSec,
       accuracy,
       fastestIntervalMs: fastestInterval,
@@ -702,8 +713,12 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     history.push(sessionResults);
     saveHistoryToStorage(history);
 
-    // Update best scores
-    updateBestScores(settings.taskMode, {
+    // Keep fixed-pacing records separate from adaptive records. In fixed mode,
+    // the interval is chosen rather than earned through adaptation.
+    const highScoreMode = settings.intervalMode === 'fixed'
+      ? `${settings.taskMode}:fixed`
+      : settings.taskMode;
+    updateBestScores(highScoreMode, {
       fastest: fastestInterval,
       streaks: longestStreakCount,
       correctRatio: accuracy,

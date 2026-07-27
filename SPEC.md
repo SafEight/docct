@@ -61,12 +61,13 @@ Background: `bg-[#090a0d]`
   - Settings gear icon (desktop only, mobile shows at bottom)
 
 #### Main content area
-- **Duration selector**: three buttons "5 MINUTES" / "10 MINUTES" / "15 MINUTES"
-  - Each: `w-[80px] h-[80px] rounded-xl flex flex-col justify-center items-center gap-2 cursor-pointer`
-  - Selected state: `bg-[#a9b4cc]` background
-  - Default: no background, `text-[#a9b4cc]`
+- **Pacing selector**: Adaptive / Fixed
+  - Adaptive changes the interval after correct or wrong streaks
+  - Fixed keeps the selected interval constant
+
+- **Duration**: custom minute input with 5 / 10 / 15 / 30 / 60 presets
   
-- **Starting Interval**: label "STARTING INTERVAL", input + preset buttons
+- **Starting Interval** (Adaptive) / **Interval** (Fixed): input + preset buttons
   - Input: `bg-[#0f121a] p-2 w-[100px] text-xl font-medium text-white`
   - Preset buttons: 0.5, 1, 2, 3, 5 — `bg-[#a9b4cc] p-2 rounded-md`
   
@@ -128,9 +129,10 @@ Shows past sessions:
   "useVoice": true,       // voice or visual digits
   "useKeypad": true,      // keypad or keyboard input
   "voicePack": "rose",    // "rose" | "rose_fast" | "jenny"
-  "beepOnIncorrect": false,
+  "wrongSound": "beep",   // "none" | "beep" | "fart"
   "startingInterval": 3000,  // ms
-  "minimumInterval": 500,    // ms
+  "minimumInterval": 500,    // ms, Adaptive pacing only
+  "intervalMode": "adaptive", // "adaptive" | "fixed"
   "onboardingCompleted": false,
   "taskMode": "1-back"    // "1-back" | "2-back" | "variable"
 }
@@ -179,7 +181,7 @@ function checkAnswer(playerAnswer):
     recordCorrect()
   else:
     recordIncorrect()
-    if beepOnIncorrect: playBeep()
+    if wrongSound !== "none": playWrongSound()
 ```
 
 ### Interval Adaptation
@@ -191,21 +193,24 @@ function recordCorrect():
   wrongStreak = 0
   correctCount++
   
-  if correctStreak >= STREAK_THRESHOLD:  // threshold increases
+  if correctStreak >= 3:
     correctStreak = 0
     streakCount++
-    currentInterval = max(minimumInterval, currentInterval - DECREMENT)
-    fastestInterval = min(fastestInterval, currentInterval)
+    if intervalMode === "adaptive":
+      step = max(15, round(currentInterval / 12))
+      currentInterval = max(minimumInterval, currentInterval - step)
+      fastestInterval = min(fastestInterval, currentInterval)
 
 function recordIncorrect():
   wrongStreak++
   correctStreak = 0
-  currentInterval = min(startingInterval, currentInterval + INCREMENT)
+  if wrongStreak >= 3:
+    wrongStreak = 0
+    if intervalMode === "adaptive":
+      currentInterval += max(15, round(currentInterval / 12))
 ```
 
-The streak threshold for interval decrease starts at 3 and increments. 
-DECREMENT = ~200ms each time.
-INCREMENT = ~500ms on wrong answer.
+Adaptive pacing changes after every three correct or wrong answers. Fixed pacing still records streaks and scores but never changes `currentInterval`.
 
 ### Scoring
 - **Accuracy**: correctCount / totalAnswers
