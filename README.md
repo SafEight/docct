@@ -1,5 +1,7 @@
 # DOCCT
 
+**Play online:** https://docct-cn5.pages.dev/
+
 Recreation of https://docct.pages.dev built fully automatically by AI.
 I did not look at any of the code, so proceed at your own risk.
 
