@@ -63,6 +63,34 @@
 
     <div class="my-1 h-px bg-[#7e889c]"></div>
 
+    <div class="px-3 py-2">
+      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Session display</span>
+    </div>
+
+    <button
+      class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.displayMode === 'standard' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}"
+      onclick={() => engine.updateSettings({ displayMode: 'standard' })}
+    >
+      <span class="flex flex-col">
+        <span class="font-medium {state.settings.displayMode === 'standard' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Standard</span>
+        <span class="text-[10px] {state.settings.displayMode === 'standard' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">Timer and interval visible</span>
+      </span>
+      <span class="text-sm font-semibold {state.settings.displayMode === 'standard' ? 'text-[#10b981]' : ''}">&bull;</span>
+    </button>
+
+    <button
+      class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.displayMode === 'focus' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}"
+      onclick={() => engine.updateSettings({ displayMode: 'focus' })}
+    >
+      <span class="flex flex-col">
+        <span class="font-medium {state.settings.displayMode === 'focus' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Focus</span>
+        <span class="text-[10px] {state.settings.displayMode === 'focus' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">Hide during training</span>
+      </span>
+      <span class="text-sm font-semibold {state.settings.displayMode === 'focus' ? 'text-[#10b981]' : ''}">&bull;</span>
+    </button>
+
+    <div class="my-1 h-px bg-[#7e889c]"></div>
+
     {#if state.settings.useKeypad}
       <div class="px-3 py-2">
         <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Keypad layout</span>

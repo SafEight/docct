@@ -261,9 +261,11 @@
     <!-- Controls row: interval + mode status + pause/resume -->
     <div class="flex flex-col items-center justify-center gap-6 md:flex-row md:gap-0">
       <div class="flex grow items-center justify-center gap-3 md:justify-end">
-        <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(2)}</span> SECONDS</span>
-        {#if state.settings.intervalMode === 'fixed'}
-          <span class="rounded-full bg-[#121621] px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[#10b981]">Fixed</span>
+        {#if state.settings.displayMode === 'standard'}
+          <span data-interval-readout class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(2)}</span> SECONDS</span>
+          {#if state.settings.intervalMode === 'fixed'}
+            <span class="rounded-full bg-[#121621] px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[#10b981]">Fixed</span>
+          {/if}
         {/if}
         {#if state.settings.taskMode === 'variable'}
           <span class="rounded-full border border-[#10b981] px-3 py-1 text-xs font-semibold text-[#10b981]">{state.nBack}-BACK</span>

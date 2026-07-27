@@ -88,6 +88,9 @@ Background: `bg-[#090a0d]`
 When session is running (`isPaused === false` or timer counting down).
 
 - **Timer**: top-left, decreases every second. Display as `MM:SS`.
+  - Standard display shows it during training
+  - Focus display hides it during training but leaves it visible during setup
+- **Interval readout**: Standard shows the numeric interval; Focus hides it while preserving the progress ring and post-session interval results
 - **Digit display**: large centered number (1-9). Voice speaks it if voice mode enabled.
 - **Answer input** (keypad mode): buttons 2-18
   - Classic (3×6) layout remains the default for backward compatibility
@@ -132,6 +135,7 @@ Shows past sessions:
   "useVoice": true,       // voice or visual digits
   "useKeypad": true,      // keypad or keyboard input
   "keypadLayout": "classic", // "classic" | "sequential"
+  "displayMode": "standard", // "standard" | "focus"
   "voicePack": "rose",    // "rose" | "rose_fast" | "jenny"
   "wrongSound": "beep",   // "none" | "beep" | "fart"
   "startingInterval": 3000,  // ms

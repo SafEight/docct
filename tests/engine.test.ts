@@ -70,6 +70,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     useVoice: false,   // disabled in tests: avoids audio duration affecting tick timing
     useKeypad: true,
     keypadLayout: 'classic',
+    displayMode: 'standard',
     voicePack: 'rose',
     wrongSound: 'none',
     startingInterval: 3000,
@@ -591,7 +592,21 @@ describe('Settings persistence', () => {
     expect(s.onboardingCompleted).toBe(true);
     expect(s.intervalMode).toBe('adaptive');
     expect(s.keypadLayout).toBe('classic');
+    expect(s.displayMode).toBe('standard');
     e.dispose();
+  });
+
+  it('persists focus display mode', () => {
+    const e = createEngine(makeSettings());
+    e.updateSettings({ displayMode: 'focus' });
+
+    expect(e.getState().settings.displayMode).toBe('focus');
+    expect(JSON.parse(localStorage.getItem('settings')!).displayMode).toBe('focus');
+    e.dispose();
+
+    const restored = createEngine();
+    expect(restored.getState().settings.displayMode).toBe('focus');
+    restored.dispose();
   });
 
   it('persists the sequential keypad layout', () => {
