@@ -73,7 +73,7 @@
         onclick={() => engine.updateSettings({ keypadLayout: 'classic' })}
       >
         <span class="flex flex-col">
-          <span class="font-medium {state.settings.keypadLayout === 'classic' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Classic</span>
+          <span class="font-medium {state.settings.keypadLayout === 'classic' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Classic (3×6)</span>
           <span class="text-[10px] {state.settings.keypadLayout === 'classic' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">Current grouped layout</span>
         </span>
         <span class="text-sm font-semibold {state.settings.keypadLayout === 'classic' ? 'text-[#10b981]' : ''}">&bull;</span>
