@@ -17,6 +17,7 @@
   let lastTouchEndTime = $state(0); // timestamp of last touchend (suppresses synthetic click)
   let touchFailsafeTimer: ReturnType<typeof setTimeout> | null = null;
   let ringProgress = $state(201);  // SVG circle stroke-dashoffset (201 = empty, 0 = full)
+  const answerValues = Array.from({ length: 17 }, (_, index) => index + 2);
 
   // Derived primitives: Svelte 5 $effect tracks the whole `state` proxy, so any
   // notify() (including submitAnswer) re-runs the effect and restarts the ring.
@@ -209,6 +210,38 @@
   );
 </script>
 
+{#snippet digitDisplay(compact = false)}
+  <div
+    data-digit-display
+    class="flex items-center justify-center {compact ? 'h-[72px] w-[72px] md:h-[88px] md:w-[88px]' : 'w-[88px] py-6'}"
+  >
+    {#if state.settings.useVoice}
+      {#if state.isPlayingAudio}
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256" aria-label="Playing digit"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Zm32-16a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,232,80Z"></path></svg>
+      {:else}
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256" aria-label="Voice digit"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Z"></path></svg>
+      {/if}
+    {:else if state.currentDigit !== null}
+      <div class="relative">
+        <span class="text-4xl font-medium text-[#ffffff]">{state.currentDigit}</span>
+        <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+          <circle cx="36" cy="36" r="32" fill="none" stroke="#1a1f2e" stroke-width="4" />
+          <circle
+            cx="36" cy="36" r="32"
+            fill="none"
+            stroke="#10b981"
+            stroke-width="4"
+            stroke-linecap="round"
+            stroke-dasharray="201"
+            stroke-dashoffset={ringProgress}
+            style="transform: rotate(-90deg); transform-origin: center;"
+          />
+        </svg>
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
 <div class="relative flex grow select-none flex-col items-center justify-end gap-12 py-6 md:flex-row md:grow-0 md:justify-evenly md:gap-24">
   <!-- Streak bar + label -->
   <div class="relative flex flex-col items-center">
@@ -254,44 +287,36 @@
     {#if state.settings.useKeypad}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
+        data-keypad-layout={state.settings.keypadLayout}
         class="flex justify-center"
         style="touch-action: none;"
         ontouchmove={handleKeypadTouchMove}
         ontouchend={handleKeypadTouchEnd}
         ontouchcancel={handleKeypadTouchEnd}
       >
-        <div class="flex flex-col gap-3 overflow-hidden">
+        {#if state.settings.keypadLayout === 'sequential'}
+          <div class="flex flex-col items-center gap-3">
+            {@render digitDisplay(true)}
+            <div class="grid grid-cols-6 gap-2 md:gap-3">
+              {#each answerValues as answer}
+                <button
+                  data-answer={answer}
+                  aria-label={`Answer ${answer}`}
+                  class="flex h-12 w-12 select-none items-center justify-center rounded-xl border-2 md:h-[72px] md:w-[72px] md:rounded-2xl {selectedButton === answer ? 'border-[#000000] bg-[#000000]' : 'cursor-pointer border-[#0f121a] hover:bg-[#0f121a]'}"
+                  ontouchstart={(e) => handleKeypadTouchStart(answer, e)}
+                  onclick={(e) => handleKeypadClick(answer, e)}
+                >
+                  <span class="select-none text-xl font-extrabold text-[#10b981] md:text-3xl">{answer}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {:else}
+          <div class="flex flex-col gap-3 overflow-hidden">
           <!-- Row 1: digit/speaker + 2,3 | 4,5,6 -->
           <div class="flex flex-col md:flex-row gap-3">
             <div class="flex gap-3">
-              <div class="flex justify-center items-center py-6 w-[88px]">
-                {#if state.settings.useVoice}
-                  <!-- Voice mode: speaker icon -->
-                  {#if state.isPlayingAudio}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Zm32-16a8,8,0,0,0-8,8v80a8,8,0,0,0,16,0V88A8,8,0,0,0,232,80Z"></path></svg>
-                  {:else}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="#a9b4cc" viewBox="0 0 256 256"><path d="M168,32V224a8,8,0,0,1-12.91,6.31L85.25,176H40a16,16,0,0,1-16-16V96A16,16,0,0,1,40,80H85.25l69.84-54.31A8,8,0,0,1,168,32Zm32,64a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V104A8,8,0,0,0,200,96Z"></path></svg>
-                  {/if}
-                {:else if state.currentDigit !== null}
-                  <!-- Text/visual mode: digit with SVG progress ring -->
-                  <div class="relative">
-                    <span class="text-[#ffffff] text-4xl font-medium">{state.currentDigit}</span>
-                    <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" width="72" height="72" viewBox="0 0 72 72">
-                      <circle cx="36" cy="36" r="32" fill="none" stroke="#1a1f2e" stroke-width="4" />
-                      <circle
-                        cx="36" cy="36" r="32"
-                        fill="none"
-                        stroke="#10b981"
-                        stroke-width="4"
-                        stroke-linecap="round"
-                        stroke-dasharray="201"
-                        stroke-dashoffset={ringProgress}
-                        style="transform: rotate(-90deg); transform-origin: center;"
-                      />
-                    </svg>
-                  </div>
-                {/if}
-              </div>
+              {@render digitDisplay()}
               <button data-answer="2" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 2 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(2, e)} onclick={(e) => handleKeypadClick(2, e)}><span class="select-none text-[#10b981] text-4xl font-extrabold">2</span></button>
               <button data-answer="3" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 3 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(3, e)} onclick={(e) => handleKeypadClick(3, e)}><span class="select-none text-[#10b981] text-4xl font-extrabold">3</span></button>
             </div>
@@ -327,7 +352,8 @@
               <button data-answer="18" class="flex select-none justify-center py-6 w-[88px] border-2 border-[#0f121a] rounded-2xl {selectedButton === 18 ? 'bg-[#000000] border-[#000000]' : 'cursor-pointer hover:bg-[#0f121a]'}" ontouchstart={(e) => handleKeypadTouchStart(18, e)} onclick={(e) => handleKeypadClick(18, e)}><span class="select-none text-[#10b981] text-4xl font-extrabold">18</span></button>
             </div>
           </div>
-        </div>
+          </div>
+        {/if}
       </div>
     {:else}
       <!-- Keyboard input mode -->

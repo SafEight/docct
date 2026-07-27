@@ -30,7 +30,7 @@
   bind:this={wrapperEl}
   class="z-20 {mobileFloating ? 'fixed bottom-20 left-4 right-4 md:absolute md:bottom-auto md:left-auto md:right-0 md:top-[42px] md:w-[220px]' : 'absolute right-0 top-[42px] w-[220px]'}"
 >
-  <div class="rounded-md bg-[#a9b4cc] p-1 shadow-2xl">
+  <div class="max-h-[calc(100vh-7rem)] overflow-y-auto rounded-md bg-[#a9b4cc] p-1 shadow-2xl">
     <!-- Task mode: Regular (1-back) -->
     <button class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.taskMode === '1-back' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}" onclick={() => engine.updateSettings({ taskMode: '1-back' })}>
       <span class="font-medium {state.settings.taskMode === '1-back' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Regular</span>
@@ -62,6 +62,36 @@
     </button>
 
     <div class="my-1 h-px bg-[#7e889c]"></div>
+
+    {#if state.settings.useKeypad}
+      <div class="px-3 py-2">
+        <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Keypad layout</span>
+      </div>
+
+      <button
+        class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.keypadLayout === 'classic' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}"
+        onclick={() => engine.updateSettings({ keypadLayout: 'classic' })}
+      >
+        <span class="flex flex-col">
+          <span class="font-medium {state.settings.keypadLayout === 'classic' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Classic</span>
+          <span class="text-[10px] {state.settings.keypadLayout === 'classic' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">Current grouped layout</span>
+        </span>
+        <span class="text-sm font-semibold {state.settings.keypadLayout === 'classic' ? 'text-[#10b981]' : ''}">&bull;</span>
+      </button>
+
+      <button
+        class="group flex w-full items-center justify-between rounded-md px-3 py-2 text-left {state.settings.keypadLayout === 'sequential' ? 'bg-[#000000]' : 'cursor-pointer hover:bg-[#000000]'}"
+        onclick={() => engine.updateSettings({ keypadLayout: 'sequential' })}
+      >
+        <span class="flex flex-col">
+          <span class="font-medium {state.settings.keypadLayout === 'sequential' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Sequential 6×3</span>
+          <span class="text-[10px] {state.settings.keypadLayout === 'sequential' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">2–7, 8–13, 14–18</span>
+        </span>
+        <span class="text-sm font-semibold {state.settings.keypadLayout === 'sequential' ? 'text-[#10b981]' : ''}">&bull;</span>
+      </button>
+
+      <div class="my-1 h-px bg-[#7e889c]"></div>
+    {/if}
 
     <!-- Voice label -->
     <div class="px-3 py-2">

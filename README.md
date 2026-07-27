@@ -9,6 +9,8 @@ I did not look at any of the code, so proceed at your own risk.
 
 - Accent color changed to emerald green
 - Set custom session duration (type any number, not just 5/10/15 min presets)
+- Mobile keypad supports swipe-to-select, held-answer input, and touch-cancel safeguards
+- Optional Sequential 6×3 keypad layout, while preserving the existing Classic layout as the default
 - Fixed pacing mode keeps the selected interval constant, regardless of correct or wrong streaks
 - More aggressive adaptive difficulty curve, so interval changes faster and is displayed with 2-decimal precision
 - Wrong-answer sound options: None / Beep / Fart 💨 (8 random variations) — in case beep wasn't annoying enough

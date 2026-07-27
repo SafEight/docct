@@ -89,7 +89,9 @@ When session is running (`isPaused === false` or timer counting down).
 
 - **Timer**: top-left, decreases every second. Display as `MM:SS`.
 - **Digit display**: large centered number (1-9). Voice speaks it if voice mode enabled.
-- **Answer input** (keypad mode): grid of buttons 1-18 (2 columns on mobile, wider on desktop)
+- **Answer input** (keypad mode): buttons 2-18
+  - Classic layout remains the default for backward compatibility
+  - Optional Sequential 6×3 layout uses rows `2-7`, `8-13`, and `14-18`
   - Buttons: `bg-[#0f121a] border border-[#7e889c] rounded-md`
   - Correct answer flashes green briefly
   - Wrong answer: `bg-[#e85c4f]` briefly, optional wrong-answer sound
@@ -129,6 +131,7 @@ Shows past sessions:
   "timer": 600,           // seconds (600 = 10 min)
   "useVoice": true,       // voice or visual digits
   "useKeypad": true,      // keypad or keyboard input
+  "keypadLayout": "classic", // "classic" | "sequential"
   "voicePack": "rose",    // "rose" | "rose_fast" | "jenny"
   "wrongSound": "beep",   // "none" | "beep" | "fart"
   "startingInterval": 3000,  // ms

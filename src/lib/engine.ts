@@ -7,6 +7,7 @@ export interface GameSettings {
   timer: number;              // seconds (600 = 10 min)
   useVoice: boolean;
   useKeypad: boolean;
+  keypadLayout: 'classic' | 'sequential';
   voicePack: 'rose' | 'rose_fast' | 'jenny';
   wrongSound: 'none' | 'beep' | 'fart'; // sound effect for wrong answers
   startingInterval: number;   // ms (3000)
@@ -96,6 +97,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   timer: 600,
   useVoice: true,
   useKeypad: true,
+  keypadLayout: 'classic',
   voicePack: 'rose',
   wrongSound: 'beep',
   startingInterval: 3000,
@@ -122,6 +124,7 @@ function loadSettingsFromStorage(): GameSettings {
         timer: Number(parsed.timer) || DEFAULT_SETTINGS.timer,
         useVoice: !!parsed.useVoice,
         useKeypad: !!parsed.useKeypad,
+        keypadLayout: parsed.keypadLayout === 'sequential' ? 'sequential' : 'classic',
         voicePack: ['rose', 'rose_fast', 'jenny'].includes(parsed.voicePack) ? String(parsed.voicePack) : DEFAULT_SETTINGS.voicePack,
         wrongSound: ['none', 'beep', 'fart'].includes(parsed.wrongSound) ? parsed.wrongSound : DEFAULT_SETTINGS.wrongSound,
         startingInterval: Number(parsed.startingInterval) || DEFAULT_SETTINGS.startingInterval,

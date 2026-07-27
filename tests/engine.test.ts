@@ -69,6 +69,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     timer: 600,
     useVoice: false,   // disabled in tests: avoids audio duration affecting tick timing
     useKeypad: true,
+    keypadLayout: 'classic',
     voicePack: 'rose',
     wrongSound: 'none',
     startingInterval: 3000,
@@ -589,7 +590,21 @@ describe('Settings persistence', () => {
     expect(s.minimumInterval).toBe(300);
     expect(s.onboardingCompleted).toBe(true);
     expect(s.intervalMode).toBe('adaptive');
+    expect(s.keypadLayout).toBe('classic');
     e.dispose();
+  });
+
+  it('persists the sequential keypad layout', () => {
+    const e = createEngine(makeSettings());
+    e.updateSettings({ keypadLayout: 'sequential' });
+
+    expect(e.getState().settings.keypadLayout).toBe('sequential');
+    expect(JSON.parse(localStorage.getItem('settings')!).keypadLayout).toBe('sequential');
+    e.dispose();
+
+    const restored = createEngine();
+    expect(restored.getState().settings.keypadLayout).toBe('sequential');
+    restored.dispose();
   });
 
   it('persists fixed interval pacing', () => {

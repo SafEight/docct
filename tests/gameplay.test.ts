@@ -61,6 +61,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     timer: 600,
     useVoice: false,
     useKeypad: true,
+    keypadLayout: 'classic',
     voicePack: 'rose',
     wrongSound: 'none',
     startingInterval: 3000,
