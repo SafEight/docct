@@ -87,16 +87,17 @@ Background: `bg-[#090a0d]`
 ### 3. Active Session Screen
 When session is running (`isPaused === false` or timer counting down).
 
-- **Timer**: top-center, decreases every second. Display as `MM:SS`.
+- **Timer**: top-left, decreases every second. Display as `MM:SS`.
 - **Digit display**: large centered number (1-9). Voice speaks it if voice mode enabled.
 - **Answer input** (keypad mode): grid of buttons 1-18 (2 columns on mobile, wider on desktop)
   - Buttons: `bg-[#0f121a] border border-[#7e889c] rounded-md`
   - Correct answer flashes green briefly
-  - Wrong answer: `bg-[#e85c4f]` briefly, optional beep sound
+  - Wrong answer: `bg-[#e85c4f]` briefly, optional wrong-answer sound
 - **Timer bar**: visual progress bar showing time remaining
 - **Streak bar**: thin colored bar at top — green for correct streak, red for wrong streak
-- **Pause button**: pauses game, shows pause icon
-- **Stop button**: ends session, shows results
+- **Variable-mode badge**: displays the current `1-BACK` or `2-BACK` instruction directly before Pause
+- **Pause/Resume button**: primary circular session control beside the interval and mode badge
+- **End Session button**: explicit text action in the top-left header, spatially separated from Pause
 
 ### 4. Paused State
 Overlay with "PAUSED" text, resume button.

@@ -611,6 +611,32 @@ describe('Settings persistence', () => {
     e.dispose();
   });
 
+  it('updates the setup clock when duration changes', () => {
+    const e = createEngine(makeSettings({ timer: 600, onboardingCompleted: true }));
+    expect(e.getState().timeLeft).toBe(600);
+
+    e.updateSettings({ timer: 300 });
+
+    expect(e.getState().settings.timer).toBe(300);
+    expect(e.getState().timeLeft).toBe(300);
+    expect(e.getState().totalTime).toBe(300);
+    e.dispose();
+  });
+
+  it('uses an edited duration when a session starts and after restart', async () => {
+    const e = createEngine(makeSettings({ timer: 600, onboardingCompleted: true }));
+    e.updateSettings({ timer: 300 });
+    await startEngine(e);
+    tickSecond();
+    e.stop();
+
+    expect(e.getState().sessionResults?.durationSec).toBe(1);
+    e.restart();
+    expect(e.getState().timeLeft).toBe(300);
+    expect(e.getState().totalTime).toBe(300);
+    e.dispose();
+  });
+
   it('overrides take priority over localStorage', () => {
     localStorage.setItem('settings', JSON.stringify({ timer: 100, onboardingCompleted: true }));
     const e = createEngine({ timer: 999 });

@@ -225,36 +225,28 @@
 
   <!-- Center column -->
   <div class="flex flex-col justify-end gap-6 md:grow">
-    <!-- Controls row: pause + interval + stop -->
+    <!-- Controls row: interval + mode status + pause/resume -->
     <div class="flex flex-col items-center justify-center gap-6 md:flex-row md:gap-0">
-      <div class="flex grow items-center justify-center gap-6 md:justify-end">
-        {#if isPaused}
-          <!-- Mobile resume button (md:hidden) -->
-          <button class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#090a0d] md:hidden" onclick={() => engine.resume()}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Play--Streamline-Solar" height="20" width="20"><g id="Bold Duotone/Video Audio Sound/Play"><path id="Vector" fill="#10b981" d="m8.59662 21.6145 12.81198 -6.9671C22.4695 14.0705 23 13.0352 23 12H4v6.9671c0 2.3092 2.53435 3.7689 4.59662 2.6474Z" stroke-width="1"></path><path id="Vector_2" fill="#a9b4cc" fill-rule="evenodd" d="M23 12c0 -1.0352 -0.5305 -2.07047 -1.5914 -2.64742L8.59661 2.38548C6.53435 1.26402 4 2.72368 4 5.0329V12h19Z" clip-rule="evenodd" stroke-width="1"></path></g></svg>
-          </button>
-        {:else}
-          <!-- Mobile pause button (md:hidden) -->
-          <button class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#090a0d] md:hidden" onclick={() => engine.pause()}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Pause--Streamline-Solar" height="20" width="20"><g id="Bold Duotone/Video Audio Sound/Pause"><path id="Vector" fill="#10b981" d="M14 6c0 -1.88562 0 -2.82843 0.5858 -3.41421C15.1716 2 16.1144 2 18 2c1.8856 0 2.8284 0 3.4142 0.58579C22 3.17157 22 4.11438 22 6v12c0 1.8856 0 2.8284 -0.5858 3.4142C20.8284 22 19.8856 22 18 22c-1.8856 0 -2.8284 0 -3.4142 -0.5858C14 20.8284 14 19.8856 14 18V6Z" stroke-width="1"></path><path id="Vector_2" fill="#a9b4cc" d="M2 6c0 -1.88562 0 -2.82843 0.58579 -3.41421C3.17157 2 4.11438 2 6 2c1.88562 0 2.82843 0 3.41421 0.58579C10 3.17157 10 4.11438 10 6v12c0 1.8856 0 2.8284 -0.58579 3.4142C8.82843 22 7.88562 22 6 22c-1.88562 0 -2.82843 0 -3.41421 -0.5858C2 20.8284 2 19.8856 2 18V6Z" stroke-width="1"></path></g></svg>
-          </button>
+      <div class="flex grow items-center justify-center gap-3 md:justify-end">
+        <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(2)}</span> SECONDS</span>
+        {#if state.settings.intervalMode === 'fixed'}
+          <span class="rounded-full bg-[#121621] px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[#10b981]">Fixed</span>
+        {/if}
+        {#if state.settings.taskMode === 'variable'}
+          <span class="rounded-full border border-[#10b981] px-3 py-1 text-xs font-semibold text-[#10b981]">{state.nBack}-BACK</span>
+        {:else if state.canAnswer}
+          <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
         {/if}
 
-        <!-- Interval text + settled badge -->
-        <div class="flex items-center gap-3">
-          <span class="text-sm text-[#a9b4cc]"><span class="font-extrabold">{(state.currentInterval / 1000).toFixed(2)}</span> SECONDS</span>
-          {#if state.settings.intervalMode === 'fixed'}
-            <span class="rounded-full bg-[#121621] px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[#10b981]">Fixed</span>
-          {/if}
-          {#if state.canAnswer}
-            <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
-          {/if}
-        </div>
-
-        <!-- Desktop stop button (always visible) -->
-        <button class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#090a0d]" onclick={() => engine.stop()}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Stop--Streamline-Solar" height="20" width="20"><g id="Bold Duotone/Video Audio Sound/Stop"><path id="Vector" fill="#10b981" d="M3.46484 20.5359c1.46447 1.4645 3.82149 1.4645 8.53556 1.4645 4.714 0 7.071 0 8.5355 -1.4645 1.4645 -1.4645 1.4645 -3.8215 1.4645 -8.5355 0 -4.71407 0 -7.07109 -1.4645 -8.53556L3.46484 20.5359Z" stroke-width="1"></path><path id="Vector_2" fill="#a9b4cc" fill-rule="evenodd" d="M3.46447 3.46447C2 4.92893 2 7.28595 2 12c0 4.714 0 7.0711 1.46447 8.5355L20.5355 3.46447C19.0711 2 16.714 2 12 2 7.28595 2 4.92893 2 3.46447 3.46447Z" clip-rule="evenodd" stroke-width="1"></path></g></svg>
-        </button>
+        {#if isPaused}
+          <button aria-label="Resume session" title="Resume" class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={() => engine.resume()}>
+            <svg viewBox="0 0 24 24" height="20" width="20" aria-hidden="true"><path fill="#10b981" d="M7 4.8v14.4c0 1.45 1.6 2.32 2.82 1.53l10.7-6.87a2.2 2.2 0 0 0 0-3.72L9.82 3.27A1.82 1.82 0 0 0 7 4.8Z"></path></svg>
+          </button>
+        {:else}
+          <button aria-label="Pause session" title="Pause" class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={() => engine.pause()}>
+            <svg viewBox="0 0 24 24" height="20" width="20" aria-hidden="true"><rect x="4" y="3" width="6" height="18" rx="2" fill="#a9b4cc"></rect><rect x="14" y="3" width="6" height="18" rx="2" fill="#10b981"></rect></svg>
+          </button>
+        {/if}
       </div>
     </div>
 

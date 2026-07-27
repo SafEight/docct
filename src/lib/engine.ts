@@ -259,7 +259,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
   let canAnswer = false;     // true once enough digits have been shown for an N-back match
   let isPlayingAudio = false; // true while a voice digit is playing (suppresses ring/text)
   let timeLeft = settings.timer; // seconds remaining in the session (counts down each second)
-  const totalTime = settings.timer; // session length in seconds (immutable once set)
+  let totalTime = settings.timer; // configured session length, refreshed before each session
 
   // ── Interval (difficulty speed) ────────────────────────────────────────
   // The interval is the gap between digits in ms. Starts at startingInterval
@@ -746,8 +746,9 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     },
 
     start() {
-      // Reset session state
+      // Reset session state from the latest setup values
       timeLeft = settings.timer;
+      totalTime = settings.timer;
       currentInterval = settings.startingInterval;
       fastestInterval = settings.startingInterval;
       correctStreak = 0;
@@ -815,6 +816,8 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     restart() {
       if (phase !== 'complete') return;
       phase = 'setup';
+      timeLeft = settings.timer;
+      totalTime = settings.timer;
       sessionResults = null;
       notify();
     },
@@ -848,6 +851,10 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     updateSettings(s) {
       Object.assign(settings, s);
+      if (s.timer !== undefined && (phase === 'setup' || phase === 'onboarding')) {
+        timeLeft = settings.timer;
+        totalTime = settings.timer;
+      }
       saveSettingsToStorage(settings);
       notify();
     },
