@@ -64,6 +64,9 @@ Background: `bg-[#090a0d]`
 - **Pacing selector**: Adaptive / Fixed
   - Adaptive changes the interval after correct or wrong streaks
   - Fixed keeps the selected interval constant
+- **Adaptation Step** (Adaptive only): Responsive / Classic (0.10s)
+  - Responsive uses `max(15, round(currentInterval / 12))`
+  - Classic changes by exactly 100ms and stays between the configured minimum and starting intervals
 
 - **Duration**: custom minute input with 5 / 10 / 15 / 30 / 60 presets
   
@@ -141,6 +144,7 @@ Shows past sessions:
   "startingInterval": 3000,  // ms
   "minimumInterval": 500,    // ms, Adaptive pacing only
   "intervalMode": "adaptive", // "adaptive" | "fixed"
+  "adaptationMode": "responsive", // "responsive" | "classic"
   "onboardingCompleted": false,
   "taskMode": "1-back"    // "1-back" | "2-back" | "variable"
 }
@@ -196,6 +200,10 @@ function checkAnswer(playerAnswer):
 ```
 currentInterval = startingInterval  // in ms
 
+function adaptationStep():
+  if adaptationMode === "classic": return 100
+  return max(15, round(currentInterval / 12))
+
 function recordCorrect():
   correctStreak++
   wrongStreak = 0
@@ -205,8 +213,7 @@ function recordCorrect():
     correctStreak = 0
     streakCount++
     if intervalMode === "adaptive":
-      step = max(15, round(currentInterval / 12))
-      currentInterval = max(minimumInterval, currentInterval - step)
+      currentInterval = max(minimumInterval, currentInterval - adaptationStep())
       fastestInterval = min(fastestInterval, currentInterval)
 
 function recordIncorrect():
@@ -215,10 +222,13 @@ function recordIncorrect():
   if wrongStreak >= 3:
     wrongStreak = 0
     if intervalMode === "adaptive":
-      currentInterval += max(15, round(currentInterval / 12))
+      nextInterval = currentInterval + adaptationStep()
+      currentInterval = adaptationMode === "classic"
+        ? min(startingInterval, nextInterval)
+        : nextInterval
 ```
 
-Adaptive pacing changes after every three correct or wrong answers. Fixed pacing still records streaks and scores but never changes `currentInterval`.
+Adaptive pacing changes after every three correct or wrong answers. Responsive remains the backward-compatible default. Classic uses symmetric 100ms steps bounded by the configured minimum and starting interval. Fixed pacing still records streaks and scores but never changes `currentInterval`.
 
 ### Scoring
 - **Accuracy**: correctCount / totalAnswers

@@ -23,6 +23,10 @@
   function handleIntervalMode(intervalMode: 'adaptive' | 'fixed') {
     engine.updateSettings({ intervalMode });
   }
+
+  function handleAdaptationMode(adaptationMode: 'responsive' | 'classic') {
+    engine.updateSettings({ adaptationMode });
+  }
 </script>
 
 <div class="flex flex-col justify-center grow gap-18">
@@ -49,6 +53,31 @@
           {state.settings.intervalMode === 'adaptive' ? 'Changes with your performance' : 'Stays at the selected interval'}
         </span>
       </div>
+
+      {#if state.settings.intervalMode === 'adaptive'}
+        <div class="flex flex-col items-start gap-3">
+          <span class="text-sm text-[#7e889c]">ADAPTATION STEP</span>
+          <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Adaptive interval step">
+            <button
+              type="button"
+              aria-pressed={state.settings.adaptationMode === 'responsive'}
+              class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'responsive' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
+              onclick={() => handleAdaptationMode('responsive')}
+            >Responsive</button>
+            <button
+              type="button"
+              aria-pressed={state.settings.adaptationMode === 'classic'}
+              class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'classic' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
+              onclick={() => handleAdaptationMode('classic')}
+            >Classic (0.10s)</button>
+          </div>
+          <span class="text-xs text-[#7e889c]">
+            {state.settings.adaptationMode === 'responsive'
+              ? 'Scales each adjustment with the current interval'
+              : 'Adjusts by exactly 0.10 seconds after each 3-answer streak'}
+          </span>
+        </div>
+      {/if}
 
       <div class="flex flex-col md:flex-row gap-9">
         <!-- Duration -->

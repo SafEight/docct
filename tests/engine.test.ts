@@ -76,6 +76,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     startingInterval: 3000,
     minimumInterval: 500,
     intervalMode: 'adaptive',
+    adaptationMode: 'responsive',
     onboardingCompleted: true,
     taskMode: '1-back',
     ...overrides,
@@ -343,6 +344,77 @@ describe('Interval adaptation', () => {
     e.dispose();
   });
 
+  it('uses a fixed 100ms speed-up in Classic adaptation', async () => {
+    const e = createEngine(makeSettings({
+      taskMode: '1-back',
+      startingInterval: 3000,
+      minimumInterval: 500,
+      adaptationMode: 'classic',
+    }));
+    await startEngine(e);
+
+    for (let i = 0; i < 3; i++) {
+      tickDigit(e);
+      const h = e.getState().digitHistory;
+      e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    }
+    tickDigit(e);
+
+    expect(e.getState().currentInterval).toBe(2900);
+    e.dispose();
+  });
+
+  it('uses a fixed 100ms slow-down in Classic adaptation', async () => {
+    const e = createEngine(makeSettings({
+      taskMode: '1-back',
+      startingInterval: 3000,
+      minimumInterval: 500,
+      adaptationMode: 'classic',
+    }));
+    await startEngine(e);
+
+    for (let i = 0; i < 3; i++) {
+      tickDigit(e);
+      const h = e.getState().digitHistory;
+      e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    }
+    tickDigit(e);
+    expect(e.getState().currentInterval).toBe(2900);
+
+    for (let i = 0; i < 3; i++) {
+      e.submitAnswer(9999);
+      tickDigit(e);
+    }
+
+    expect(e.getState().currentInterval).toBe(3000);
+    e.dispose();
+  });
+
+  it('clamps Classic adaptation between minimum and starting interval', async () => {
+    const e = createEngine(makeSettings({
+      taskMode: '1-back',
+      startingInterval: 550,
+      minimumInterval: 500,
+      adaptationMode: 'classic',
+    }));
+    await startEngine(e);
+
+    for (let i = 0; i < 3; i++) {
+      tickDigit(e);
+      const h = e.getState().digitHistory;
+      e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    }
+    tickDigit(e);
+    expect(e.getState().currentInterval).toBe(500);
+
+    for (let i = 0; i < 6; i++) {
+      e.submitAnswer(9999);
+      tickDigit(e);
+    }
+    expect(e.getState().currentInterval).toBe(550);
+    e.dispose();
+  });
+
   it('interval increases after 3 wrong answers (STREAK_THRESHOLD)', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 3000, minimumInterval: 500 }));
     await startEngine(e);
@@ -421,6 +493,7 @@ describe('Interval adaptation', () => {
     const e = createEngine(makeSettings({
       taskMode: '1-back',
       intervalMode: 'fixed',
+      adaptationMode: 'classic',
       startingInterval: 500,
       minimumInterval: 500,
     }));
@@ -442,6 +515,7 @@ describe('Interval adaptation', () => {
     const e = createEngine(makeSettings({
       taskMode: '1-back',
       intervalMode: 'fixed',
+      adaptationMode: 'classic',
       startingInterval: 500,
       minimumInterval: 500,
     }));
@@ -591,6 +665,7 @@ describe('Settings persistence', () => {
     expect(s.minimumInterval).toBe(300);
     expect(s.onboardingCompleted).toBe(true);
     expect(s.intervalMode).toBe('adaptive');
+    expect(s.adaptationMode).toBe('responsive');
     expect(s.keypadLayout).toBe('classic');
     expect(s.displayMode).toBe('standard');
     e.dispose();
@@ -619,6 +694,19 @@ describe('Settings persistence', () => {
 
     const restored = createEngine();
     expect(restored.getState().settings.keypadLayout).toBe('sequential');
+    restored.dispose();
+  });
+
+  it('persists Classic adaptation', () => {
+    const e = createEngine(makeSettings());
+    e.updateSettings({ adaptationMode: 'classic' });
+
+    expect(e.getState().settings.adaptationMode).toBe('classic');
+    expect(JSON.parse(localStorage.getItem('settings')!).adaptationMode).toBe('classic');
+    e.dispose();
+
+    const restored = createEngine();
+    expect(restored.getState().settings.adaptationMode).toBe('classic');
     restored.dispose();
   });
 
