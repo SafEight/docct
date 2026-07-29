@@ -64,7 +64,7 @@
     <div class="my-1 h-px bg-[#7e889c]"></div>
 
     <div class="px-3 py-2">
-      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Session display</span>
+      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#515c70]">Session display</span>
     </div>
 
     <button
@@ -73,7 +73,7 @@
     >
       <span class="flex flex-col">
         <span class="font-medium {state.settings.displayMode === 'standard' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Standard</span>
-        <span class="text-[10px] {state.settings.displayMode === 'standard' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">Timer and interval visible</span>
+        <span class="text-[10px] {state.settings.displayMode === 'standard' ? 'text-[#7e889c]' : 'text-[#515c70] group-hover:text-[#7e889c]'}">Timer and interval visible</span>
       </span>
       <span class="text-sm font-semibold {state.settings.displayMode === 'standard' ? 'text-[#10b981]' : ''}">&bull;</span>
     </button>
@@ -84,7 +84,7 @@
     >
       <span class="flex flex-col">
         <span class="font-medium {state.settings.displayMode === 'focus' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Focus</span>
-        <span class="text-[10px] {state.settings.displayMode === 'focus' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">Hide during training</span>
+        <span class="text-[10px] {state.settings.displayMode === 'focus' ? 'text-[#7e889c]' : 'text-[#515c70] group-hover:text-[#7e889c]'}">Hide during training</span>
       </span>
       <span class="text-sm font-semibold {state.settings.displayMode === 'focus' ? 'text-[#10b981]' : ''}">&bull;</span>
     </button>
@@ -93,7 +93,7 @@
 
     {#if state.settings.useKeypad}
       <div class="px-3 py-2">
-        <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Keypad layout</span>
+        <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#515c70]">Keypad layout</span>
       </div>
 
       <button
@@ -102,7 +102,7 @@
       >
         <span class="flex flex-col">
           <span class="font-medium {state.settings.keypadLayout === 'classic' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Classic (3×6)</span>
-          <span class="text-[10px] {state.settings.keypadLayout === 'classic' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">Current grouped layout</span>
+          <span class="text-[10px] {state.settings.keypadLayout === 'classic' ? 'text-[#7e889c]' : 'text-[#515c70] group-hover:text-[#7e889c]'}">Current grouped layout</span>
         </span>
         <span class="text-sm font-semibold {state.settings.keypadLayout === 'classic' ? 'text-[#10b981]' : ''}">&bull;</span>
       </button>
@@ -113,7 +113,7 @@
       >
         <span class="flex flex-col">
           <span class="font-medium {state.settings.keypadLayout === 'sequential' ? 'text-[#a9b4cc]' : 'text-[#090a0d] group-hover:text-[#a9b4cc]'}">Sequential 6×3</span>
-          <span class="text-[10px] {state.settings.keypadLayout === 'sequential' ? 'text-[#7e889c]' : 'text-[#4f5563] group-hover:text-[#7e889c]'}">2–7, 8–13, 14–18</span>
+          <span class="text-[10px] {state.settings.keypadLayout === 'sequential' ? 'text-[#7e889c]' : 'text-[#515c70] group-hover:text-[#7e889c]'}">2–7, 8–13, 14–18</span>
         </span>
         <span class="text-sm font-semibold {state.settings.keypadLayout === 'sequential' ? 'text-[#10b981]' : ''}">&bull;</span>
       </button>
@@ -123,7 +123,7 @@
 
     <!-- Voice label -->
     <div class="px-3 py-2">
-      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Voice</span>
+      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#515c70]">Voice</span>
     </div>
 
     <!-- Voice: Rose -->
@@ -160,7 +160,7 @@
 
     <!-- Wrong answer sound label -->
     <div class="px-3 py-2">
-      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#4f5563]">Wrong answer sound</span>
+      <span class="text-xs font-semibold uppercase tracking-[0.18em] text-[#515c70]">Wrong answer sound</span>
     </div>
 
     <!-- Wrong sound: None -->

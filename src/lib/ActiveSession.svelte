@@ -269,8 +269,6 @@
         {/if}
         {#if state.settings.taskMode === 'variable'}
           <span class="rounded-full border border-[#10b981] px-3 py-1 text-xs font-semibold text-[#10b981]">{state.nBack}-BACK</span>
-        {:else if state.canAnswer}
-          <span class="hidden rounded-full bg-[#a9b4cc] px-2 py-1 text-sm text-[#090a0d] sm:inline-flex">Settled</span>
         {/if}
 
         {#if isPaused}

@@ -181,10 +181,10 @@
   <div class="flex pt-12 pb-6 md:pb-0 justify-center md:justify-between gap-2 items-center w-full max-w-5xl">
     <span class="hidden md:inline text-2xl text-white">What a session!</span>
     <div class="flex gap-3">
-      <button class="cursor-pointer flex items-center gap-6 bg-[#0f121a] hover:bg-[#121621] py-3 px-8 rounded-full border border-[#273049]" onclick={() => onHistory?.()}>
+      <button class="cursor-pointer flex items-center gap-6 bg-[#0f121a] hover:bg-[#121621] py-3 px-8 rounded-full border border-[#7e889c]" onclick={() => onHistory?.()}>
         <span class="text-[#a9b4cc] font-semibold">History</span>
       </button>
-      <button class="cursor-pointer flex items-center gap-6 bg-[#10b981] hover:opacity-75 py-3 px-18 rounded-full border" onclick={() => engine.restart()}>
+      <button class="cursor-pointer flex items-center gap-6 bg-[#10b981] hover:opacity-75 py-3 px-18 rounded-full" onclick={() => engine.restart()}>
         <span class="text-[#090a0d] font-semibold">Start again</span>
       </button>
     </div>
@@ -195,7 +195,7 @@
     <div class="flex flex-col md:flex-row gap-6 max-w-5xl w-full">
       <!-- Accuracy card -->
       <div class="flex flex-col flex-1 justify-center gap-6 p-6 md:flex-row md:items-center">
-        <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden flex-1">
+        <div class="flex flex-col gap-[5px] rounded-[24px] overflow-hidden flex-1">
           <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
             <span class="text-2xl text-[#a9b4cc] px-6">Accuracy</span>
             <div class="flex gap-3 items-center">
@@ -222,7 +222,7 @@
 
       <!-- Fastest Interval card -->
       <div class="flex flex-col flex-1 justify-center gap-6 p-6 md:flex-row md:items-center">
-        <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden flex-1">
+        <div class="flex flex-col gap-[5px] rounded-[24px] overflow-hidden flex-1">
           <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
             <span class="text-2xl text-[#a9b4cc] px-6">Fastest Interval</span>
             <div class="flex gap-3 items-center">
@@ -249,7 +249,7 @@
 
       <!-- Streaks card -->
       <div class="flex flex-col flex-1 justify-center gap-6 p-6 md:flex-row md:items-center">
-        <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden flex-1">
+        <div class="flex flex-col gap-[5px] rounded-[24px] overflow-hidden flex-1">
           <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
             <span class="text-2xl text-[#a9b4cc] px-6">Streaks</span>
             <div class="flex gap-3 items-center">
@@ -276,7 +276,7 @@
 
       <!-- Avg Response Time card -->
       <div class="flex flex-col flex-1 justify-center gap-6 p-6 md:flex-row md:items-center">
-        <div class="flex flex-col gap-[5px] rounded-4xl overflow-hidden flex-1">
+        <div class="flex flex-col gap-[5px] rounded-[24px] overflow-hidden flex-1">
           <div class="flex flex-col bg-[#0f121a] pt-6 text-center items-center">
             <span class="text-2xl text-[#a9b4cc] px-6">Avg. Response Time</span>
             <div class="flex gap-3 items-center">
@@ -293,14 +293,14 @@
 
     <!-- Charts section -->
     <div class="grid grid-cols-1 gap-4 max-w-5xl w-full mt-4">
-      <section class="rounded-[28px] bg-[#0f121a] p-5">
+      <section class="rounded-[24px] bg-[#0f121a] p-5">
         <span class="text-lg font-medium text-[#a9b4cc]">Accuracy</span>
         <div class="mt-4 h-[200px] min-w-0 sm:h-[220px] md:h-[240px] lg:h-[260px]">
           <canvas bind:this={accuracyCanvas}></canvas>
         </div>
       </section>
 
-      <section class="rounded-[28px] bg-[#0f121a] p-5">
+      <section class="rounded-[24px] bg-[#0f121a] p-5">
         <span class="text-lg font-medium text-[#a9b4cc]">Fastest Interval</span>
         <div class="mt-4 h-[200px] min-w-0 sm:h-[220px] md:h-[240px] lg:h-[260px]">
           <canvas bind:this={intervalCanvas}></canvas>
@@ -308,7 +308,7 @@
       </section>
     </div>
   {:else}
-    <div class="rounded-[28px] bg-[#0f121a] p-8 text-center max-w-5xl w-full">
+    <div class="rounded-[24px] bg-[#0f121a] p-8 text-center max-w-5xl w-full">
       <span class="text-lg font-semibold text-white">No sessions yet</span>
       <p class="mt-3 text-sm leading-6 text-[#7e889c]">Finish a session in this mode and the progress charts will show up here.</p>
     </div>
