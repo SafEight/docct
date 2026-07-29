@@ -129,10 +129,14 @@
       <span class="text-[#090a0d] font-semibold text-lg">Start session</span>
     </button>
 
-    <div class="flex justify-center pt-4">
-      <a href="https://discord.com/invite/brain" target="_blank" rel="noreferrer" class="group flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-[#7e889c] hover:text-[#a9b4cc]">
+    <div class="flex flex-wrap justify-center gap-x-6 gap-y-1 pt-4 text-sm">
+      <a href="https://discord.com/invite/brain" target="_blank" rel="noreferrer" class="group flex flex-wrap items-center justify-center gap-x-2 text-[#7e889c] hover:text-[#a9b4cc]">
         <span>Mindbuilding Discord:</span>
         <span class="text-[#a9b4cc] group-hover:text-[#ffffff]">discord.gg/brain</span>
+      </a>
+      <a href="https://github.com/SafEight/docct" target="_blank" rel="noreferrer" class="group flex items-center justify-center gap-x-2 text-[#7e889c] hover:text-[#a9b4cc]">
+        <span>GitHub:</span>
+        <span class="text-[#a9b4cc] group-hover:text-[#ffffff]">SafEight/docct</span>
       </a>
     </div>
 
