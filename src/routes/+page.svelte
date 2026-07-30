@@ -59,8 +59,6 @@
 
       <!-- Right side: settings (hidden on mobile during active) -->
       <div class="{isActive ? 'hidden md:flex' : 'flex'} pt-6 pb-4 md:pt-0 md:pb-0 flex-col md:flex-row gap-2 items-end md:items-center">
-          <!-- DIGIT + ANSWER row -->
-          <div class="flex flex-row gap-2 items-center">
           <!-- DIGIT dropdown -->
           <div class="relative">
             <button class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { digitDropdownOpen = !digitDropdownOpen; answerDropdownOpen = false; }}>
@@ -105,7 +103,6 @@
                 </div>
               </div>
             {/if}
-          </div>
           </div>
 
           <!-- HISTORY + SETTINGS row -->
