@@ -263,22 +263,28 @@ describe('Full gameplay flow — 2-back', () => {
 });
 
 describe('Gameplay state transitions', () => {
-  it('pause and resume preserves state', async () => {
-    const e = createEngine(makeSettings({ startingInterval: 100 }));
+  it('pause and resume preserves the session while rebuilding the answer window', async () => {
+    const e = createEngine(makeSettings({ taskMode: '1-back', startingInterval: 100 }));
     await startEngine(e);
 
-    tickDigit(e);
-    tickDigit(e);
+    tickDigit(e); // second digit: answerable
+    expect(e.getState().canAnswer).toBe(true);
+    const intervalBefore = e.getState().currentInterval;
+    const answersBefore = e.getState().totalAnswers;
 
-    const before = e.getState().digitHistory.length;
     e.pause();
     expect(e.getState().phase).toBe('paused');
 
     e.resume();
     expect(e.getState().phase).toBe('active');
+    vi.advanceTimersByTime(0); // first fresh digit
+    expect(e.getState().currentInterval).toBe(intervalBefore);
+    expect(e.getState().totalAnswers).toBe(answersBefore);
+    expect(e.getState().digitHistory).toHaveLength(1);
+    expect(e.getState().canAnswer).toBe(false);
 
-    tickDigit(e);
-    expect(e.getState().digitHistory.length).toBeGreaterThanOrEqual(before);
+    tickDigit(e); // second fresh digit
+    expect(e.getState().canAnswer).toBe(true);
     e.dispose();
   });
 

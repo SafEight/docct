@@ -616,6 +616,57 @@ describe('State machine transitions', () => {
     e.dispose();
   });
 
+  it('resume discards the interrupted 1-back turn and rebuilds the digit window', async () => {
+    const e = createEngine(makeSettings({
+      onboardingCompleted: true,
+      taskMode: '1-back',
+      startingInterval: 100,
+    }));
+    await startEngine(e); // first digit
+    tickDigit(e); // second digit: answerable
+    expect(e.getState().canAnswer).toBe(true);
+
+    const answersBeforePause = e.getState().totalAnswers;
+    e.pause();
+    e.resume();
+    vi.advanceTimersByTime(0); // immediate first post-resume digit
+
+    expect(e.getState().totalAnswers).toBe(answersBeforePause);
+    expect(e.getState().digitHistory).toHaveLength(1);
+    expect(e.getState().canAnswer).toBe(false);
+
+    tickDigit(e); // second fresh digit: 1-back becomes answerable again
+    expect(e.getState().totalAnswers).toBe(answersBeforePause);
+    expect(e.getState().canAnswer).toBe(true);
+    e.dispose();
+  });
+
+  it('resume requires three fresh digits before 2-back can be answered', async () => {
+    const e = createEngine(makeSettings({
+      onboardingCompleted: true,
+      taskMode: '2-back',
+      startingInterval: 100,
+    }));
+    await startEngine(e); // first digit
+    tickDigit(e); // second digit
+    tickDigit(e); // third digit: answerable
+    expect(e.getState().canAnswer).toBe(true);
+
+    const answersBeforePause = e.getState().totalAnswers;
+    e.pause();
+    e.resume();
+    vi.advanceTimersByTime(0); // first fresh digit
+    expect(e.getState().totalAnswers).toBe(answersBeforePause);
+    expect(e.getState().canAnswer).toBe(false);
+
+    tickDigit(e); // second fresh digit
+    expect(e.getState().canAnswer).toBe(false);
+    tickDigit(e); // third fresh digit
+    expect(e.getState().totalAnswers).toBe(answersBeforePause);
+    expect(e.getState().canAnswer).toBe(true);
+    e.dispose();
+  });
+
   it('active → complete via stop()', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
     await startEngine(e);

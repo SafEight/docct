@@ -811,10 +811,24 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
     resume() {
       if (phase !== 'paused') return;
+
+      // A paused turn is interrupted, not skipped. Discard its pending answer
+      // state and rebuild the N-back window from fresh post-resume digits so
+      // resuming cannot immediately record a wrong answer.
+      digitHistory = [];
+      currentDigit = null;
+      canAnswer = false;
+      pendingAnswer = undefined;
+      expectedAnswer = undefined;
+      lastResponseTime = 0;
+      digitShownAt = 0;
+      digitGeneration++;
+
       phase = 'active';
       notify();
       startCountdown();
-      // Original resumes with immediate next digit (0ms delay)
+      // Resume with the first fresh digit immediately; normal N-back warm-up
+      // then determines when answering becomes available again.
       scheduleNextDigit(0);
     },
 
