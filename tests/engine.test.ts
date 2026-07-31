@@ -667,6 +667,35 @@ describe('State machine transitions', () => {
     e.dispose();
   });
 
+  it('resume rebuilds the window for Variable mode according to its current n-back', async () => {
+    // Math.random >= 0.5 forces determineNBack() to choose 2-back.
+    vi.spyOn(Math, 'random').mockReturnValue(0.9);
+    const e = createEngine(makeSettings({
+      onboardingCompleted: true,
+      taskMode: 'variable',
+      startingInterval: 100,
+    }));
+    await startEngine(e);
+    tickDigit(e);
+    tickDigit(e); // enough digits for forced 2-back
+    expect(e.getState().nBack).toBe(2);
+    expect(e.getState().canAnswer).toBe(true);
+
+    const answersBeforePause = e.getState().totalAnswers;
+    e.pause();
+    e.resume();
+    vi.advanceTimersByTime(0); // first fresh digit
+    expect(e.getState().nBack).toBe(2);
+    expect(e.getState().canAnswer).toBe(false);
+
+    tickDigit(e); // second fresh digit
+    expect(e.getState().canAnswer).toBe(false);
+    tickDigit(e); // third fresh digit
+    expect(e.getState().totalAnswers).toBe(answersBeforePause);
+    expect(e.getState().canAnswer).toBe(true);
+    e.dispose();
+  });
+
   it('active → complete via stop()', async () => {
     const e = createEngine(makeSettings({ onboardingCompleted: true }));
     await startEngine(e);
