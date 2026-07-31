@@ -177,18 +177,19 @@
   }
 
   const isPaused = $derived(state.phase === 'paused');
-  const currentDigit = $derived(state.currentDigit);
+  const inputGeneration = $derived(state.digitGeneration);
 
-  // Clear selection when new digit arrives.
+  // Clear selection and keyboard input on every new interval, even when two
+  // consecutive intervals happen to generate the same digit.
   // If the user's finger is still on a button (swipeActive), re-submit that
   // answer instead of clearing — otherwise the held button goes unregistered
   // and the turn is marked wrong. Guard with a short freshness window so a
   // missed touchend/touchcancel cannot keep submitting stale answers forever.
   // Uses untrack() for swipeActive/selectedButton so the effect ONLY re-runs
-  // on currentDigit changes — not on every notify() → state replacement, which
-  // would clear the highlight mid-press.
+  // when digitGeneration advances — not on every notify() → state replacement,
+  // which would clear the input or highlight immediately after submission.
   $effect(() => {
-    currentDigit; // only tracked dependency
+    inputGeneration; // only tracked dependency
     const swiping = untrack(() => swipeActive);
     const selected = untrack(() => selectedButton);
     const touchAge = Date.now() - untrack(() => lastTouchStartTime);
