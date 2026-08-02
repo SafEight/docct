@@ -56,7 +56,7 @@
       {#if state.settings.intervalMode === 'adaptive'}
         <div class="flex flex-col items-center md:items-start gap-4">
           <span class="text-sm text-[#7e889c]">ADJUSTMENT</span>
-          <div class="flex flex-wrap items-center gap-4">
+          <div class="flex flex-col md:flex-row items-center md:items-center gap-4">
             <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Adaptive adjustment type">
               <button
                 type="button"
@@ -80,7 +80,7 @@
                 <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md w-10 h-10 flex items-center justify-center font-bold text-[#0f121a] text-lg" onmousedown={(e) => e.preventDefault()} onclick={() => handleAdaptationStep(state.settings.adaptationStepMs + 50)} aria-label="Increase step size">
                   <span>+</span>
                 </button>
-                <span class="text-sm text-[#7e889c] ml-1">sec</span>
+                <span class="text-sm text-[#7e889c] ml-1">s</span>
               </div>
             {/if}
           </div>
