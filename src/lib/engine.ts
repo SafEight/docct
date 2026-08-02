@@ -15,6 +15,7 @@ export interface GameSettings {
   minimumInterval: number;    // ms (500)
   intervalMode: 'adaptive' | 'fixed';
   adaptationMode: 'responsive' | 'classic';
+  adaptationStepMs: number;       // fixed step size in ms (default 100, range 50–500)
   onboardingCompleted: boolean;
   taskMode: '1-back' | '2-back' | 'variable';
 }
@@ -23,6 +24,8 @@ export interface SessionResult {
   completedAt: string;
   mode: string;
   intervalMode: 'adaptive' | 'fixed';
+  adaptationMode: 'responsive' | 'classic';
+  adaptationStepMs: number;
   durationSec: number;
   accuracy: number;           // 0-1
   fastestIntervalMs: number;
@@ -83,11 +86,11 @@ const HIGH_SCORES_KEY = 'highScores';
 const STREAK_THRESHOLD = 3; // correct/wrong streak needed to change interval
 
 /**
- * Responsive adaptation scales with the current interval. Classic uses the
- * original-style fixed 100ms adjustment selected by the user.
+ * Responsive adaptation scales with the current interval. Classic uses a
+ * fixed-step adjustment chosen by the user (default 100 ms).
  */
-function adaptationStep(current: number, mode: GameSettings['adaptationMode']): number {
-  return mode === 'classic' ? 100 : Math.max(15, Math.round(current / 12));
+function adaptationStep(current: number, mode: GameSettings['adaptationMode'], stepMs: number): number {
+  return mode === 'classic' ? stepMs : Math.max(15, Math.round(current / 12));
 }
 const INITIAL_DELAY = 500; // ms before first digit (matches original)
 
@@ -103,6 +106,7 @@ const DEFAULT_SETTINGS: GameSettings = {
   minimumInterval: 500,
   intervalMode: 'adaptive',
   adaptationMode: 'responsive',
+  adaptationStepMs: 100,
   onboardingCompleted: false,
   taskMode: '1-back',
 };
@@ -132,6 +136,7 @@ function loadSettingsFromStorage(): GameSettings {
         minimumInterval: Number(parsed.minimumInterval) || DEFAULT_SETTINGS.minimumInterval,
         intervalMode: parsed.intervalMode === 'fixed' ? 'fixed' : 'adaptive',
         adaptationMode: parsed.adaptationMode === 'classic' ? 'classic' : 'responsive',
+        adaptationStepMs: Number(parsed.adaptationStepMs) > 0 ? Math.max(50, Math.min(500, Number(parsed.adaptationStepMs))) : DEFAULT_SETTINGS.adaptationStepMs,
         onboardingCompleted: !!parsed.onboardingCompleted,
         taskMode: ['1-back', '2-back', 'variable'].includes(parsed.taskMode) ? parsed.taskMode : DEFAULT_SETTINGS.taskMode,
       };
@@ -161,6 +166,8 @@ function validateSessionResult(entry: any): SessionResult | null {
   return {
     completedAt, mode,
     intervalMode: entry.intervalMode === 'fixed' ? 'fixed' : 'adaptive',
+    adaptationMode: entry.adaptationMode === 'classic' ? 'classic' : 'responsive',
+    adaptationStepMs: Number(entry.adaptationStepMs) > 0 ? Number(entry.adaptationStepMs) : 100,
     durationSec, accuracy, fastestIntervalMs, endingIntervalMs, streaks,
     useVoice: !!entry.useVoice, useKeypad: !!entry.useKeypad,
     averageResponseTimeMs: Number(entry.averageResponseTimeMs) || 0,
@@ -550,7 +557,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       longestStreakCount++;            // count completed streaks for high score
       if (settings.intervalMode === 'adaptive') {
         // Player hit the streak target — speed up!
-        const step = adaptationStep(currentInterval, settings.adaptationMode);
+        const step = adaptationStep(currentInterval, settings.adaptationMode, settings.adaptationStepMs);
         currentInterval = Math.max(settings.minimumInterval, currentInterval - step);
         fastestInterval = Math.min(fastestInterval, currentInterval);
       }
@@ -568,7 +575,7 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
     if (wrongStreakCounter === STREAK_THRESHOLD) {
       if (settings.intervalMode === 'adaptive') {
         // Player hit the wrong-streak target — slow down!
-        const nextInterval = currentInterval + adaptationStep(currentInterval, settings.adaptationMode);
+        const nextInterval = currentInterval + adaptationStep(currentInterval, settings.adaptationMode, settings.adaptationStepMs);
         // Preserve Responsive's existing unbounded slow-down. Classic stays
         // within the user's configured starting/minimum range.
         currentInterval = settings.adaptationMode === 'classic'
@@ -705,6 +712,8 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
       completedAt: new Date().toISOString(),
       mode: settings.taskMode,
       intervalMode: settings.intervalMode,
+      adaptationMode: settings.adaptationMode,
+      adaptationStepMs: settings.adaptationStepMs,
       durationSec,
       accuracy,
       fastestIntervalMs: fastestInterval,

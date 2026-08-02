@@ -77,6 +77,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     minimumInterval: 500,
     intervalMode: 'adaptive',
     adaptationMode: 'responsive',
+    adaptationStepMs: 100,
     onboardingCompleted: true,
     taskMode: '1-back',
     ...overrides,
@@ -413,6 +414,66 @@ describe('Interval adaptation', () => {
     }
     expect(e.getState().currentInterval).toBe(550);
     e.dispose();
+  });
+
+  it('uses a custom 50ms step in Classic adaptation', async () => {
+    const e = createEngine(makeSettings({
+      taskMode: '1-back',
+      startingInterval: 3000,
+      minimumInterval: 500,
+      adaptationMode: 'classic',
+      adaptationStepMs: 50,
+    }));
+    await startEngine(e);
+
+    for (let i = 0; i < 3; i++) {
+      tickDigit(e);
+      const h = e.getState().digitHistory;
+      e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    }
+    tickDigit(e);
+    expect(e.getState().currentInterval).toBe(2950); // 3000 - 50
+    e.dispose();
+  });
+
+  it('uses a custom 50ms slow-down in Classic adaptation', async () => {
+    const e = createEngine(makeSettings({
+      taskMode: '1-back',
+      startingInterval: 3000,
+      minimumInterval: 500,
+      adaptationMode: 'classic',
+      adaptationStepMs: 50,
+    }));
+    await startEngine(e);
+
+    // Get to 2950 first
+    for (let i = 0; i < 3; i++) {
+      tickDigit(e);
+      const h = e.getState().digitHistory;
+      e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
+    }
+    tickDigit(e);
+    expect(e.getState().currentInterval).toBe(2950);
+
+    for (let i = 0; i < 3; i++) {
+      e.submitAnswer(9999);
+      tickDigit(e);
+    }
+    expect(e.getState().currentInterval).toBe(3000); // 2950 + 50, capped at starting
+    e.dispose();
+  });
+
+  it('persists a custom adaptation step', async () => {
+    const e = createEngine(makeSettings());
+    e.updateSettings({ adaptationMode: 'classic', adaptationStepMs: 50 });
+
+    expect(e.getState().settings.adaptationStepMs).toBe(50);
+    expect(JSON.parse(localStorage.getItem('settings')!).adaptationStepMs).toBe(50);
+    e.dispose();
+
+    const restored = createEngine();
+    expect(restored.getState().settings.adaptationStepMs).toBe(50);
+    restored.dispose();
   });
 
   it('interval increases after 3 wrong answers (STREAK_THRESHOLD)', async () => {

@@ -25,10 +25,14 @@
   function handleAdaptationMode(adaptationMode: 'responsive' | 'classic') {
     engine.updateSettings({ adaptationMode });
   }
+
+  function handleAdaptationStep(ms: number) {
+    engine.updateSettings({ adaptationStepMs: Math.max(50, Math.min(500, ms)) });
+  }
 </script>
 
-<div class="flex flex-col justify-center grow gap-18">
-  <div class="flex flex-col md:flex-row gap-18 items-center grow">
+<div class="flex flex-col justify-center grow gap-10 md:gap-18">
+  <div class="flex flex-col md:flex-row gap-10 md:gap-18 items-center grow">
     <div class="flex flex-col gap-9">
       <!-- Pacing is independent from the Regular / 2-back / Variable task mode. -->
       <div class="flex flex-col items-start gap-4">
@@ -51,20 +55,34 @@
 
       {#if state.settings.intervalMode === 'adaptive'}
         <div class="flex flex-col items-start gap-4">
-          <span class="text-sm text-[#7e889c]">ADAPTATION STEP</span>
-          <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Adaptive interval step">
-            <button
-              type="button"
-              aria-pressed={state.settings.adaptationMode === 'responsive'}
-              class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'responsive' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
-              onclick={() => handleAdaptationMode('responsive')}
-            >Responsive</button>
-            <button
-              type="button"
-              aria-pressed={state.settings.adaptationMode === 'classic'}
-              class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'classic' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
-              onclick={() => handleAdaptationMode('classic')}
-            >Classic (0.10s)</button>
+          <span class="text-sm text-[#7e889c]">ADAPTATION STYLE</span>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Adaptive interval style">
+              <button
+                type="button"
+                aria-pressed={state.settings.adaptationMode === 'responsive'}
+                class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'responsive' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
+                onclick={() => handleAdaptationMode('responsive')}
+              >Responsive</button>
+              <button
+                type="button"
+                aria-pressed={state.settings.adaptationMode === 'classic'}
+                class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'classic' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
+                onclick={() => handleAdaptationMode('classic')}
+              >Fixed</button>
+            </div>
+            {#if state.settings.adaptationMode === 'classic'}
+              <div class="flex items-center gap-2">
+                <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md w-10 h-10 flex items-center justify-center font-bold text-[#0f121a] text-lg" onmousedown={(e) => e.preventDefault()} onclick={() => handleAdaptationStep(state.settings.adaptationStepMs - 50)} aria-label="Decrease step size">
+                  <span>−</span>
+                </button>
+                <input aria-label="Step size in seconds" class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[80px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.adaptationStepMs / 1000).toFixed(2).replace(/0$/, "")} onchange={(e) => handleAdaptationStep(Math.round(parseFloat((e.target as HTMLInputElement).value) * 1000))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+                <button type="button" class="cursor-pointer bg-[#a9b4cc] p-2 rounded-md w-10 h-10 flex items-center justify-center font-bold text-[#0f121a] text-lg" onmousedown={(e) => e.preventDefault()} onclick={() => handleAdaptationStep(state.settings.adaptationStepMs + 50)} aria-label="Increase step size">
+                  <span>+</span>
+                </button>
+                <span class="text-sm text-[#7e889c] ml-1">sec</span>
+              </div>
+            {/if}
           </div>
         </div>
       {/if}

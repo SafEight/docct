@@ -69,6 +69,7 @@ function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
     minimumInterval: 500,
     intervalMode: 'adaptive',
     adaptationMode: 'responsive',
+    adaptationStepMs: 100,
     onboardingCompleted: true,
     taskMode: '1-back',
     ...overrides,

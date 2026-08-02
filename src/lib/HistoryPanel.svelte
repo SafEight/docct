@@ -149,7 +149,7 @@
             <div class="flex items-center justify-between">
               <span class="text-[#7e889c] text-xs">{formatDate(session.completedAt)}</span>
               <span class="text-[#a9b4cc] text-xs px-2 py-0.5 rounded-md bg-[#0f121a]">
-                {session.mode} · {session.intervalMode === 'fixed' ? 'Fixed' : 'Adaptive'}
+                {session.mode} · {session.intervalMode === 'fixed' ? 'Fixed' : session.adaptationMode === 'classic' ? `Adaptive · Fixed ${(session.adaptationStepMs / 1000).toFixed(2).replace(/0$/, '')}s` : 'Adaptive · Responsive'}
               </span>
             </div>
             <div class="flex items-center gap-4">
