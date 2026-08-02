@@ -12,8 +12,8 @@ I did not look at any of the code, so proceed at your own risk.
 - Mobile keypad supports swipe-to-select, held-answer input, and touch-cancel safeguards
 - Optional Sequential 6×3 keypad layout, while preserving the existing Classic layout as the default
 - Optional Focus display hides the live countdown and numeric interval while preserving post-session feedback
-- Fixed pacing mode keeps the selected interval constant, regardless of correct or wrong streaks
-- Adaptive pacing offers Responsive proportional adjustments or Classic fixed 0.10-second steps
+- Fixed interval mode keeps the selected interval constant, regardless of correct or wrong streaks
+- Adaptive interval mode offers Proportional adjustments (step scales with current interval) or Constant adjustments (adjustable 0.05–0.50s fixed step)
 - Wrong-answer sound options: None / Beep / Fart 💨 (8 random variations) — in case beep wasn't annoying enough
 - Progress ring fills up to the next digit in visual mode
 - Mobile keypad supports swipe-to-select (drag and release) instead of individual taps

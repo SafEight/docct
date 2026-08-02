@@ -36,7 +36,7 @@
     <div class="flex flex-col gap-9 items-center md:items-start">
       <!-- Pacing is independent from the Regular / 2-back / Variable task mode. -->
       <div class="flex flex-col items-center md:items-start gap-4">
-        <span class="text-sm text-[#7e889c]">PACING</span>
+        <span class="text-sm text-[#7e889c]">INTERVAL MODE</span>
         <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Interval pacing">
           <button
             type="button"
@@ -55,21 +55,21 @@
 
       {#if state.settings.intervalMode === 'adaptive'}
         <div class="flex flex-col items-center md:items-start gap-4">
-          <span class="text-sm text-[#7e889c]">ADAPTATION STYLE</span>
+          <span class="text-sm text-[#7e889c]">ADJUSTMENT</span>
           <div class="flex flex-wrap items-center gap-4">
-            <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Adaptive interval style">
+            <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Adaptive adjustment type">
               <button
                 type="button"
                 aria-pressed={state.settings.adaptationMode === 'responsive'}
                 class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'responsive' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
                 onclick={() => handleAdaptationMode('responsive')}
-              >Responsive</button>
+              >Proportional</button>
               <button
                 type="button"
                 aria-pressed={state.settings.adaptationMode === 'classic'}
                 class="cursor-pointer rounded-lg px-5 py-3 text-sm font-semibold transition-colors {state.settings.adaptationMode === 'classic' ? 'bg-[#10b981] text-[#090a0d]' : 'text-[#a9b4cc] hover:bg-[#121621]'}"
                 onclick={() => handleAdaptationMode('classic')}
-              >Fixed</button>
+              >Constant</button>
             </div>
             {#if state.settings.adaptationMode === 'classic'}
               <div class="flex items-center gap-2">

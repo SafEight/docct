@@ -61,12 +61,12 @@ Background: `bg-[#090a0d]`
   - Settings gear icon (desktop only, mobile shows at bottom)
 
 #### Main content area
-- **Pacing selector**: Adaptive / Fixed
+- **Interval Mode selector**: Adaptive / Fixed
   - Adaptive changes the interval after correct or wrong streaks
   - Fixed keeps the selected interval constant
-- **Adaptation Step** (Adaptive only): Responsive / Classic (0.10s)
-  - Responsive uses `max(15, round(currentInterval / 12))`
-  - Classic changes by exactly 100ms and stays between the configured minimum and starting intervals
+- **Adjustment** (Adaptive only): Proportional / Constant
+  - Proportional (Responsive) uses `max(15, round(currentInterval / 12))`
+  - Constant (Classic) changes by a fixed step (default 0.10s, adjustable 0.05–0.50s) and stays between the configured minimum and starting intervals
 
 - **Duration**: custom minute input with 5 / 10 / 15 / 30 / 60 presets
   
@@ -201,7 +201,7 @@ function checkAnswer(playerAnswer):
 currentInterval = startingInterval  // in ms
 
 function adaptationStep():
-  if adaptationMode === "classic": return 100
+  if adaptationMode === "classic": return adaptationStepMs  // configurable, default 100
   return max(15, round(currentInterval / 12))
 
 function recordCorrect():
@@ -228,7 +228,7 @@ function recordIncorrect():
         : nextInterval
 ```
 
-Adaptive pacing changes after every three correct or wrong answers. Responsive remains the backward-compatible default. Classic uses symmetric 100ms steps bounded by the configured minimum and starting interval. Fixed pacing still records streaks and scores but never changes `currentInterval`.
+Adaptive pacing changes after every three correct or wrong answers. Proportional (Responsive) remains the backward-compatible default. Constant (Classic) uses a configurable fixed step (default 100ms, adjustable 50–500ms) bounded by the configured minimum and starting interval. Fixed pacing still records streaks and scores but never changes `currentInterval`.
 
 ### Scoring
 - **Accuracy**: correctCount / totalAnswers
