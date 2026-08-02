@@ -33,9 +33,9 @@
 
 <div class="flex flex-col justify-center grow gap-10 md:gap-18">
   <div class="flex flex-col md:flex-row gap-10 md:gap-18 items-center grow">
-    <div class="flex flex-col gap-9 items-center md:items-start">
+    <div class="flex flex-col gap-9">
       <!-- Pacing is independent from the Regular / 2-back / Variable task mode. -->
-      <div class="flex flex-col items-center md:items-start gap-4">
+      <div class="flex flex-col items-start gap-4">
         <span class="text-sm text-[#7e889c]">INTERVAL MODE</span>
         <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Interval pacing">
           <button
@@ -54,7 +54,7 @@
       </div>
 
       {#if state.settings.intervalMode === 'adaptive'}
-        <div class="flex flex-col items-center md:items-start gap-4">
+        <div class="flex flex-col items-start gap-4">
           <span class="text-sm text-[#7e889c]">ADJUSTMENT</span>
           <div class="flex flex-col md:flex-row items-center md:items-center gap-4">
             <div class="inline-flex rounded-xl bg-[#0f121a] p-1" role="group" aria-label="Adaptive adjustment type">
@@ -89,7 +89,7 @@
 
       <div class="flex flex-col md:flex-row gap-9">
         <!-- Duration -->
-        <div class="flex flex-col items-center md:items-start gap-4">
+        <div class="flex flex-col items-start gap-4">
           <span class="text-sm text-[#7e889c]">DURATION</span>
           <div class="flex overflow-hidden rounded-xl">
             <input aria-label="Duration in minutes" class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.timer / 60).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleDuration(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
@@ -104,7 +104,7 @@
         </div>
 
         <!-- Starting interval becomes the only interval in Fixed pacing. -->
-        <div class="flex flex-col items-center md:items-start gap-4">
+        <div class="flex flex-col items-start gap-4">
           <span class="text-sm text-[#7e889c]">{state.settings.intervalMode === 'fixed' ? 'INTERVAL' : 'STARTING INTERVAL'}</span>
           <div class="flex overflow-hidden rounded-xl">
             <input aria-label={state.settings.intervalMode === 'fixed' ? 'Fixed interval in seconds' : 'Starting interval in seconds'} class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.startingInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleStartingInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
@@ -120,7 +120,7 @@
 
         {#if state.settings.intervalMode === 'adaptive'}
           <!-- Minimum interval only applies while pacing adapts. -->
-          <div class="flex flex-col items-center md:items-start gap-4">
+          <div class="flex flex-col items-start gap-4">
             <span class="text-sm text-[#7e889c]">MINIMUM INTERVAL</span>
             <div class="flex overflow-hidden rounded-xl">
               <input aria-label="Minimum interval in seconds" class="bg-[#0f121a] p-2 text-center text-xl font-medium text-white [appearance:textfield] focus:outline-none w-[100px] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" type="text" inputmode="decimal" spellcheck="false" value={(state.settings.minimumInterval / 1000).toFixed(2).replace(/\.?0+$/, "")} onchange={(e) => handleMinimumInterval(parseFloat((e.target as HTMLInputElement).value))} onkeydown={(e) => { if (e.key === "Escape") { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
