@@ -139,13 +139,17 @@
     engine.submitAnswer(answer);
   }
 
-  function focusOnce(node: HTMLInputElement) {
-    const frame = requestAnimationFrame(() => node.focus({ preventScroll: true }));
-    return { destroy: () => cancelAnimationFrame(frame) };
+  function handleBeforeInput(e: InputEvent) {
+    if (isPaused || !state.canAnswer) e.preventDefault();
   }
 
   function handleInput(e: Event) {
     const input = e.target as HTMLInputElement;
+    if (isPaused || !state.canAnswer) {
+      input.value = '';
+      keyValue = '';
+      return;
+    }
     // Strip non-digits, limit to 2 chars
     let raw = input.value.replace(/\D/g, '').slice(0, 2);
     // Clamp 0-99
@@ -366,7 +370,6 @@
       <div class="flex max-w-screen flex-col px-6 md:p-0">
         <input
           aria-label="Answer input"
-          use:focusOnce
           type="text"
           inputmode="numeric"
           tabindex="0"
@@ -375,10 +378,11 @@
           autocomplete="off"
           autocorrect="off"
           style="-webkit-user-select:text; user-select:text;"
-          class="pointer-events-auto select-text caret-[#10b981] md:h-[288px] md:w-[588px] rounded-4xl bg-[#000000] py-6 text-center text-4xl font-extrabold text-[#10b981] [appearance:textfield] focus:outline-none read-only:cursor-default read-only:text-[#7e889c] md:py-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          readonly={isPaused || !state.canAnswer}
+          class="pointer-events-auto select-text caret-[#10b981] md:h-[288px] md:w-[588px] rounded-4xl bg-[#000000] py-6 text-center text-4xl font-extrabold text-[#10b981] [appearance:textfield] focus:outline-none md:py-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          aria-disabled={isPaused || !state.canAnswer}
           placeholder={statusText}
           value={keyValue}
+          onbeforeinput={handleBeforeInput}
           oninput={handleInput}
           onkeydown={handleKeydown}
         />

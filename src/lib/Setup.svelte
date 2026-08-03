@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { flushSync } from 'svelte';
   import type { Engine, GameState } from '$lib/engine';
   let { engine }: { engine: Engine } = $props();
   let state = $state<GameState>(engine.getState());
@@ -28,6 +29,15 @@
 
   function handleAdaptationStep(ms: number) {
     engine.updateSettings({ adaptationStepMs: Math.max(50, Math.min(500, ms)) });
+  }
+
+  function startSession() {
+    engine.start();
+    // Keep focus inside the initiating tap. Mobile browsers only open their
+    // virtual keyboard for a normal editable input focused during user activation.
+    flushSync();
+    document.querySelector<HTMLInputElement>('[aria-label="Answer input"]')
+      ?.focus({ preventScroll: true });
   }
 </script>
 
@@ -140,7 +150,7 @@
 
   <!-- Bottom section -->
   <div class="flex flex-col items-center gap-4 pb-12 md:pb-0">
-    <button class="cursor-pointer flex justify-center items-center gap-3 bg-[#10b981] hover:opacity-75 py-5 px-16 rounded-full" onclick={() => engine.start()}>
+    <button class="cursor-pointer flex justify-center items-center gap-3 bg-[#10b981] hover:opacity-75 py-5 px-16 rounded-full" onclick={startSession}>
       <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-5 w-5 text-[#090a0d]"><path d="M8 5v14l11-7z"/></svg>
       <span class="text-[#090a0d] font-semibold text-lg">Start session</span>
     </button>
