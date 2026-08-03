@@ -67,7 +67,7 @@ afterEach(() => {
 function makeSettings(overrides?: Partial<GameSettings>): GameSettings {
   return {
     timer: 600,
-    useVoice: false,   // disabled in tests: avoids audio duration affecting tick timing
+    useVoice: false,
     useKeypad: true,
     keypadLayout: 'classic',
     displayMode: 'standard',
@@ -133,6 +133,27 @@ describe('Digit generation', () => {
     const s = e.getState();
     expect(s.digitHistory.length).toBeGreaterThanOrEqual(1);
     expect(s.digitHistory[s.digitHistory.length - 1]).toBe(s.currentDigit);
+    e.dispose();
+  });
+
+  it('voice digit onsets follow the displayed interval rather than adding clip duration', async () => {
+    const e = createEngine(makeSettings({
+      useVoice: true,
+      intervalMode: 'fixed',
+      startingInterval: 500,
+      minimumInterval: 500,
+    }));
+    await startEngine(e);
+
+    const firstGeneration = e.getState().digitGeneration;
+    expect(firstGeneration).toBe(1);
+
+    // The mock voice clip lasts 100ms. A displayed 500ms interval must still
+    // produce the next onset at 500ms, not 500 + 100ms.
+    vi.advanceTimersByTime(499);
+    expect(e.getState().digitGeneration).toBe(firstGeneration);
+    vi.advanceTimersByTime(1);
+    expect(e.getState().digitGeneration).toBe(firstGeneration + 1);
     e.dispose();
   });
 
@@ -240,11 +261,11 @@ describe('Answer checking — 1-back', () => {
   it('accepts correct answers with default voice timing and wrongSound=fart', async () => {
     const e = createEngine(makeSettings({ taskMode: '1-back', useVoice: true, startingInterval: 100, wrongSound: 'fart' }));
     await startEngine(e); // 1st digit
-    vi.advanceTimersByTime(e.getState().currentInterval + 100); // 2nd digit after voice duration
+    vi.advanceTimersByTime(e.getState().currentInterval); // 2nd digit at displayed interval
 
     const h = e.getState().digitHistory;
     e.submitAnswer(h[h.length - 2] + h[h.length - 1]);
-    vi.advanceTimersByTime(e.getState().currentInterval + 100); // triggers check
+    vi.advanceTimersByTime(e.getState().currentInterval); // triggers check at displayed interval
 
     expect(e.getState().lastAnswerCorrect).toBe(true);
     expect(e.getState().totalCorrect).toBe(1);

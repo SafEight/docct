@@ -671,9 +671,10 @@ export function createEngine(overrides?: Partial<GameSettings>): Engine {
 
       notify(); // final state push for this digit cycle
 
-      // Schedule next digit: base interval + audio playback time
-      // (next digit waits for current audio to finish playing)
-      scheduleNextDigit(currentInterval + audioDurationMs);
+      // The interval is onset-to-onset, matching the value shown in the UI.
+      // Voice clips are shorter than the supported 500ms minimum interval, so
+      // scheduling by currentInterval neither overlaps clips nor adds hidden delay.
+      scheduleNextDigit(currentInterval);
     }, delay);
   }
 
