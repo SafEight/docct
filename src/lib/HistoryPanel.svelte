@@ -106,6 +106,20 @@
     const d = new Date(iso);
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
+
+  function formatResponseTime(ms: number): string {
+    if (!Number.isFinite(ms) || ms <= 0) return '—';
+    return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`;
+  }
+
+  function formatDuration(seconds: number): string {
+    const total = Math.max(0, Math.round(seconds));
+    const minutes = Math.floor(total / 60);
+    const remainder = total % 60;
+    if (minutes === 0) return `${remainder}s`;
+    if (remainder === 0) return `${minutes}m`;
+    return `${minutes}m ${remainder}s`;
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -152,7 +166,7 @@
                 {session.mode} · {session.intervalMode === 'fixed' ? 'Fixed' : session.adaptationMode === 'classic' ? `Adaptive · Constant ${(session.adaptationStepMs / 1000).toFixed(2).replace(/0$/, '')}s` : 'Adaptive · Proportional'}
               </span>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
               <div class="flex flex-col">
                 <span class="text-[#7e889c] text-xs">Accuracy</span>
                 <span class="text-[#10b981] text-lg font-bold">{Math.round(session.accuracy * 100)}%</span>
@@ -164,6 +178,14 @@
               <div class="flex flex-col">
                 <span class="text-[#7e889c] text-xs">Correct</span>
                 <span class="text-[#4fe84f] text-lg font-bold">{session.correctCount}/{session.totalAnswers}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[#7e889c] text-xs">Avg response</span>
+                <span class="text-white text-lg font-bold">{formatResponseTime(session.averageResponseTimeMs)}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[#7e889c] text-xs">Session length</span>
+                <span class="text-white text-lg font-bold">{formatDuration(session.durationSec)}</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-[#7e889c] text-xs">Streaks</span>
