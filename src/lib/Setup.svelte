@@ -37,7 +37,7 @@
     // virtual keyboard for a normal editable input focused during user activation.
     flushSync();
     document.querySelector<HTMLInputElement>('[aria-label="Answer input"]')
-      ?.focus({ preventScroll: true });
+      ?.focus();
   }
 </script>
 

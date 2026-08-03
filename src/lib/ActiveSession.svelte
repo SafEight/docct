@@ -139,6 +139,32 @@
     engine.submitAnswer(answer);
   }
 
+  function keepAboveKeyboard(node: HTMLInputElement) {
+    const viewport = window.visualViewport;
+    const shell = document.querySelector<HTMLElement>('[data-app-shell]');
+    if (!viewport || !shell) return {};
+
+    function syncViewport() {
+      shell!.style.height = `${viewport!.height}px`;
+      shell!.style.top = `${viewport!.offsetTop}px`;
+      if (document.activeElement === node) {
+        requestAnimationFrame(() => node.scrollIntoView({ block: 'center', inline: 'nearest' }));
+      }
+    }
+
+    syncViewport();
+    viewport.addEventListener('resize', syncViewport);
+    viewport.addEventListener('scroll', syncViewport);
+    return {
+      destroy() {
+        viewport.removeEventListener('resize', syncViewport);
+        viewport.removeEventListener('scroll', syncViewport);
+        shell.style.removeProperty('height');
+        shell.style.removeProperty('top');
+      }
+    };
+  }
+
   function handleBeforeInput(e: InputEvent) {
     if (isPaused || !state.canAnswer) e.preventDefault();
   }
@@ -370,6 +396,7 @@
       <div class="flex max-w-screen flex-col px-6 md:p-0">
         <input
           aria-label="Answer input"
+          use:keepAboveKeyboard
           type="text"
           inputmode="numeric"
           tabindex="0"

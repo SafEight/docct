@@ -29,7 +29,7 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="fixed flex w-full h-full z-2 overflow-auto">
+<div data-app-shell class="fixed flex w-full h-full z-2 overflow-auto">
   <!-- Onboarding overlay (sibling, positioned fixed) -->
   {#if state.phase === 'onboarding'}
     <Onboarding {engine} />
