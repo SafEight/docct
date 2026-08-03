@@ -165,6 +165,13 @@
     };
   }
 
+  function resumeSession() {
+    engine.resume();
+    // Resume is an explicit tap, so restore the numeric keyboard while mobile
+    // user activation is still available. Do not refocus on later digit updates.
+    document.querySelector<HTMLInputElement>('[aria-label="Answer input"]')?.focus();
+  }
+
   function handleBeforeInput(e: InputEvent) {
     if (isPaused || !state.canAnswer) e.preventDefault();
   }
@@ -308,7 +315,7 @@
         {/if}
 
         {#if isPaused}
-          <button aria-label="Resume session" title="Resume" class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={() => engine.resume()}>
+          <button aria-label="Resume session" title="Resume" class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={resumeSession}>
             <svg viewBox="0 0 24 24" height="20" width="20" aria-hidden="true"><path fill="#10b981" d="M7 4.8v14.4c0 1.45 1.6 2.32 2.82 1.53l10.7-6.87a2.2 2.2 0 0 0 0-3.72L9.82 3.27A1.82 1.82 0 0 0 7 4.8Z"></path></svg>
           </button>
         {:else}
