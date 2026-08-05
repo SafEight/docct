@@ -1,10 +1,13 @@
 <script lang="ts">
   import type { Engine, GameState } from '$lib/engine';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
 
   let { engine, onHistory }: { engine: Engine; onHistory?: () => void } = $props();
-  let state = $state<GameState>(engine.getState());
+  let state = $state<GameState>(untrack(() => engine.getState()));
+  // Canvas bindings are assigned by Svelte and consumed imperatively by Chart.js.
+  // svelte-ignore non_reactive_update
   let accuracyCanvas: HTMLCanvasElement;
+  // svelte-ignore non_reactive_update
   let intervalCanvas: HTMLCanvasElement;
 
   $effect(() => {

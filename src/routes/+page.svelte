@@ -11,6 +11,7 @@
   let state = $state<GameState>(engine.getState());
   let settingsOpen = $state(false);
   let historyOpen = $state(false);
+  let historyReturnFocus = $state(null as HTMLElement | null);
   let digitDropdownOpen = $state(false);
   let answerDropdownOpen = $state(false);
 
@@ -21,12 +22,29 @@
   const isActive = $derived(state.phase === 'active' || state.phase === 'paused');
   const isSetup = $derived(state.phase === 'setup' || state.phase === 'onboarding');
 
+  function handlePageKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape' && (digitDropdownOpen || answerDropdownOpen)) {
+      event.preventDefault();
+      digitDropdownOpen = false;
+      answerDropdownOpen = false;
+    }
+  }
+
+  function openHistory() {
+    historyReturnFocus = document.activeElement as HTMLElement | null;
+    historyOpen = true;
+  }
+
   function formatTime(totalSeconds: number): string {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
 </script>
+
+<svelte:head>
+  <title>DOCCT Cognitive Control Training</title>
+</svelte:head>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div data-app-shell class="fixed flex w-full h-full z-2 overflow-auto">
@@ -36,13 +54,14 @@
   {/if}
 
   <!-- Main layout (direct child of root) -->
-  <div class="flex flex-col grow md:px-6 md:items-center {isActive ? 'select-none' : ''}">
+  <main onkeydown={handlePageKeydown} aria-hidden={state.phase === 'onboarding' || historyOpen} inert={state.phase === 'onboarding' || historyOpen ? true : undefined} class="flex flex-col grow md:px-6 md:items-center {isActive ? 'select-none' : ''}">
+    <h1 class="sr-only">DOCCT Cognitive Control Training</h1>
     <!-- Header bar -->
     <div class="md:flex md:py-6 justify-between gap-2 w-full max-w-7xl">
       <!-- Left side: timer -->
       <div class="{isActive ? 'flex px-4 pt-4' : 'hidden'} gap-6 items-center md:flex md:px-0 md:pt-0">
         {#if isActive}
-          <button class="cursor-pointer flex gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
+          <button class="cursor-pointer flex min-h-11 gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
             <span class="text-[#090a0d] text-xs font-semibold">END SESSION</span>
           </button>
         {/if}
@@ -61,7 +80,7 @@
       <div class="{isActive ? 'hidden md:flex' : 'flex'} pt-6 pb-4 md:pt-0 md:pb-0 flex-col md:flex-row gap-2 items-center">
           <!-- DIGIT dropdown -->
           <div class="relative">
-            <button class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { digitDropdownOpen = !digitDropdownOpen; answerDropdownOpen = false; }}>
+            <button aria-expanded={digitDropdownOpen} aria-controls="digit-options" aria-haspopup="true" class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { digitDropdownOpen = !digitDropdownOpen; answerDropdownOpen = false; }}>
               <span class="text-[#7e889c]">DIGIT</span>
               <div class="flex items-center gap-1">
                 <span class="text-[#a9b4cc] font-medium">{state.settings.useVoice ? 'Voice' : 'Text'}</span>
@@ -69,12 +88,12 @@
               </div>
             </button>
             {#if digitDropdownOpen}
-              <div class="absolute flex top-[30px] left-0 w-full pt-3 z-2">
+              <div id="digit-options" role="group" aria-label="Digit presentation" class="absolute flex top-[42px] left-0 w-full pt-3 z-2">
                 <div class="flex grow flex-col bg-[#a9b4cc] p-1 rounded-md">
-                  <button class="group hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useVoice: true }); digitDropdownOpen = false; }}>
+                  <button aria-pressed={state.settings.useVoice} class="group min-h-11 hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useVoice: true }); digitDropdownOpen = false; }}>
                     <span class="text-[#090a0d] group-hover:text-[#a9b4cc] font-medium">Voice</span>
                   </button>
-                  <button class="group hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useVoice: false }); digitDropdownOpen = false; }}>
+                  <button aria-pressed={!state.settings.useVoice} class="group min-h-11 hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useVoice: false }); digitDropdownOpen = false; }}>
                     <span class="text-[#090a0d] group-hover:text-[#a9b4cc] font-medium">Visual</span>
                   </button>
                 </div>
@@ -84,7 +103,7 @@
 
           <!-- ANSWER dropdown -->
           <div class="relative">
-            <button class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { answerDropdownOpen = !answerDropdownOpen; digitDropdownOpen = false; }}>
+            <button aria-expanded={answerDropdownOpen} aria-controls="answer-options" aria-haspopup="true" class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { answerDropdownOpen = !answerDropdownOpen; digitDropdownOpen = false; }}>
               <span class="text-[#7e889c]">ANSWER</span>
               <div class="flex items-center gap-1">
                 <span class="text-[#a9b4cc] font-medium">{state.settings.useKeypad ? 'On-screen keypad' : 'Keyboard'}</span>
@@ -92,12 +111,12 @@
               </div>
             </button>
             {#if answerDropdownOpen}
-              <div class="absolute flex top-[30px] left-0 w-full pt-3 z-2">
+              <div id="answer-options" role="group" aria-label="Answer method" class="absolute flex top-[42px] left-0 w-full pt-3 z-2">
                 <div class="flex grow flex-col bg-[#a9b4cc] p-1 rounded-md">
-                  <button class="group hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useKeypad: true }); answerDropdownOpen = false; }}>
+                  <button aria-pressed={state.settings.useKeypad} class="group min-h-11 hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useKeypad: true }); answerDropdownOpen = false; }}>
                     <span class="text-[#090a0d] group-hover:text-[#a9b4cc] font-medium">On-screen keypad</span>
                   </button>
-                  <button class="group hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useKeypad: false }); answerDropdownOpen = false; }}>
+                  <button aria-pressed={!state.settings.useKeypad} class="group min-h-11 hover:bg-[#000000] rounded-md cursor-pointer flex p-2 justify-end" onclick={() => { engine.updateSettings({ useKeypad: false }); answerDropdownOpen = false; }}>
                     <span class="text-[#090a0d] group-hover:text-[#a9b4cc] font-medium">Keyboard</span>
                   </button>
                 </div>
@@ -108,13 +127,13 @@
           <!-- HISTORY + SETTINGS row -->
           <div class="flex flex-row gap-2 items-center">
           <!-- HISTORY button (always visible) -->
-        <button class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => historyOpen = !historyOpen}>
+        <button class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={openHistory}>
           <span class="text-[#a9b4cc] font-medium">HISTORY</span>
         </button>
 
         <!-- Settings -->
         <div class="relative flex">
-          <button class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => settingsOpen = !settingsOpen}>
+          <button aria-expanded={settingsOpen} aria-controls="settings-panel" aria-haspopup="true" class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => settingsOpen = !settingsOpen}>
             <span class="text-[#a9b4cc] font-medium">SETTINGS</span>
           </button>
           {#if settingsOpen}
@@ -135,14 +154,14 @@
         {:else if state.phase === 'active' || state.phase === 'paused'}
           <ActiveSession {engine} />
         {:else if state.phase === 'complete'}
-          <SessionComplete {engine} onHistory={() => historyOpen = true} />
+          <SessionComplete {engine} onHistory={openHistory} />
         {/if}
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- History panel (fixed overlay, sibling of main layout) -->
   {#if historyOpen}
-    <HistoryPanel {engine} close={() => historyOpen = false} />
+    <HistoryPanel {engine} restoreFocusTo={historyReturnFocus} close={() => historyOpen = false} />
   {/if}
 </div>

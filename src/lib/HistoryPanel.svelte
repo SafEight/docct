@@ -1,12 +1,19 @@
 <script lang="ts">
   import type { Engine, GameState, SessionResult } from '$lib/engine';
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
 
-  let { engine, close }: { engine: Engine; close: () => void } = $props();
-  let state = $state<GameState>(engine.getState());
+  let { engine, close, restoreFocusTo }: { engine: Engine; close: () => void; restoreFocusTo: HTMLElement | null } = $props();
+  let state = $state<GameState>(untrack(() => engine.getState()));
+  // Canvas bindings are assigned by Svelte and consumed imperatively by Chart.js.
+  // svelte-ignore non_reactive_update
   let chartCanvas: HTMLCanvasElement;
+  // svelte-ignore non_reactive_update
   let intervalChartCanvas: HTMLCanvasElement;
   let Chart: any;
+  let accuracyChart: any;
+  let intervalChart: any;
+  let dialogEl: HTMLElement;
+  let mounted = false;
 
   $effect(() => {
     return engine.subscribe((s) => { state = s; });
@@ -19,7 +26,10 @@
   });
 
   onMount(async () => {
+    mounted = true;
+    dialogEl?.focus();
     const chartModule = await import('chart.js/auto');
+    if (!mounted) return;
     Chart = chartModule.default;
 
     if (state.history.length > 0) {
@@ -27,13 +37,47 @@
     }
   });
 
+  onDestroy(() => {
+    mounted = false;
+    accuracyChart?.destroy();
+    intervalChart?.destroy();
+    queueMicrotask(() => restoreFocusTo?.focus());
+  });
+
+  function handleDialogKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      close();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = [...dialogEl.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )].filter((element) => !element.hasAttribute('disabled'));
+    if (focusable.length === 0) {
+      event.preventDefault();
+      dialogEl.focus();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if ((event.shiftKey && (document.activeElement === first || document.activeElement === dialogEl))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogEl)) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   function renderCharts() {
     if (!chartCanvas || !Chart) return;
 
     const sessions = [...state.history].reverse();
 
     // Accuracy chart
-    new Chart(chartCanvas, {
+    accuracyChart?.destroy();
+    accuracyChart = new Chart(chartCanvas, {
       type: 'line',
       data: {
         labels: sessions.map((_, i) => ''),
@@ -65,7 +109,8 @@
 
     // Interval chart
     if (intervalChartCanvas) {
-      new Chart(intervalChartCanvas, {
+      intervalChart?.destroy();
+      intervalChart = new Chart(intervalChartCanvas, {
         type: 'line',
         data: {
           labels: sessions.map((_, i) => ''),
@@ -123,13 +168,22 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="bg-black/80 fixed inset-0 z-3 flex items-center justify-center" role="dialog" aria-label="History" onclick={close}>
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="bg-[#0f121a] rounded-[24px] p-6 max-w-[600px] w-full mx-4 max-h-[80vh] overflow-y-auto border border-[#a9b4cc]" onclick={(e) => e.stopPropagation()}>
+<div class="bg-black/80 fixed inset-0 z-3 flex items-center justify-center">
+  <button tabindex="-1" class="absolute inset-0 cursor-default" aria-label="Close history" onclick={close}></button>
+  <div
+    bind:this={dialogEl}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="history-title"
+    tabindex="-1"
+    class="bg-[#0f121a] rounded-[24px] p-6 max-w-[600px] w-full mx-4 max-h-[80vh] overflow-y-auto border border-[#a9b4cc] outline-none focus-visible:ring-2 focus-visible:ring-[#10b981]"
+    onclick={(e) => e.stopPropagation()}
+    onkeydown={handleDialogKeydown}
+  >
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-[#ffffff] text-2xl font-bold">History</h2>
-      <button class="text-[#7e889c] hover:text-white cursor-pointer" aria-label="Close history" onclick={close}>
+      <h2 id="history-title" class="text-[#ffffff] text-2xl font-bold">History</h2>
+      <button class="flex min-h-11 min-w-11 items-center justify-center rounded-md text-[#7e889c] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#10b981] cursor-pointer" aria-label="Close history" onclick={close}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.3 5.71a1 1 0 0 0-1.42 0L12 10.59 7.12 5.71A1 1 0 0 0 5.7 7.12L10.59 12l-4.88 4.88a1 1 0 0 0 1.42 1.42L12 13.41l4.88 4.88a1 1 0 0 0 1.42-1.42L13.41 12l4.88-4.88a1 1 0 0 0 0-1.41z"/>
         </svg>
@@ -141,15 +195,16 @@
         <span class="text-[#7e889c] text-lg">No sessions yet</span>
       </div>
     {:else}
+      <div class="flex flex-col">
       <!-- Charts -->
-      <div class="mb-6">
+      <div class="order-2 mb-6 md:order-1">
         <h3 class="text-[#a9b4cc] text-sm font-medium mb-3">Accuracy Trend</h3>
         <div class="bg-[#121621] rounded-xl p-4 h-[160px]">
           <canvas bind:this={chartCanvas}></canvas>
         </div>
       </div>
 
-      <div class="mb-6">
+      <div class="order-3 mb-6 md:order-2">
         <h3 class="text-[#a9b4cc] text-sm font-medium mb-3">Fastest Interval Trend</h3>
         <div class="bg-[#121621] rounded-xl p-4 h-[160px]">
           <canvas bind:this={intervalChartCanvas}></canvas>
@@ -157,7 +212,7 @@
       </div>
 
       <!-- Session list -->
-      <div class="flex flex-col gap-2">
+      <div class="order-1 mb-6 flex flex-col gap-2 md:order-3 md:mb-0">
         {#each state.history as session}
           <div class="bg-[#121621] rounded-xl p-4 flex flex-col gap-2">
             <div class="flex items-center justify-between">
@@ -194,6 +249,7 @@
             </div>
           </div>
         {/each}
+      </div>
       </div>
     {/if}
   </div>
