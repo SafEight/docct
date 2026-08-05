@@ -6,7 +6,12 @@
   let dialogEl: HTMLElement;
   let continueButton: HTMLButtonElement;
 
-  onMount(() => continueButton?.focus());
+  onMount(() => {
+    // SvelteKit may restore page focus after child onMount callbacks during
+    // hydration. Focus on the first frame so the modal reliably wins that race.
+    const frame = requestAnimationFrame(() => continueButton?.focus());
+    return () => cancelAnimationFrame(frame);
+  });
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Tab') {
@@ -45,7 +50,9 @@
       </p>
 
       <div class="flex justify-stretch md:justify-end">
+        <!-- svelte-ignore a11y_autofocus: required initial focus inside this modal -->
         <button
+          autofocus
           bind:this={continueButton}
           class="flex min-h-11 w-full cursor-pointer items-center justify-center gap-6 rounded-full border bg-[#10b981] px-8 py-3 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:w-auto"
           onclick={continueToSetup}
