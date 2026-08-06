@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { flushSync, untrack } from 'svelte';
   import type { Engine, GameState } from '$lib/engine';
 
   let { engine }: { engine: Engine } = $props();
@@ -135,10 +135,12 @@
       e.stopImmediatePropagation?.();
       return;
     }
-    // Desktop mouse input should use the button's CSS :active feedback only.
-    // `selectedButton` is reserved for touch hold/swipe state; sharing it with
-    // mouse clicks made a quick click stay black until the next digit.
+    // Flush any digit-generation update that was already pending before this
+    // click, then mark the answer selected for the current turn. The next
+    // digit-generation effect clears it exactly once the next turn begins.
     engine.submitAnswer(answer);
+    flushSync();
+    selectedButton = answer;
   }
 
   function keepAboveKeyboard(node: HTMLInputElement) {
