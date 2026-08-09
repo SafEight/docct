@@ -32,9 +32,9 @@
       return;
     }
 
-    if (isActive) {
+    if (state.phase === 'active') {
       event.preventDefault();
-      engine.stop();
+      engine.pause();
     }
   }
 
@@ -71,8 +71,8 @@
       <!-- Left side: timer -->
       <div class="{isActive ? 'flex px-4 pt-4' : 'hidden'} gap-6 items-center md:flex md:px-0 md:pt-0">
         {#if isActive}
-          <button aria-keyshortcuts="Escape" title="End session (Escape)" class="cursor-pointer flex min-h-11 gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
-            <span class="text-[#090a0d] text-xs font-semibold">END SESSION<span class="hidden md:inline"> · ESC</span></span>
+          <button class="cursor-pointer flex min-h-11 gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
+            <span class="text-[#090a0d] text-xs font-semibold">END SESSION</span>
           </button>
         {/if}
         <!-- Timer stays visible during setup; Focus hides it only while training. -->
