@@ -23,10 +23,18 @@
   const isSetup = $derived(state.phase === 'setup' || state.phase === 'onboarding');
 
   function handlePageKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && (digitDropdownOpen || answerDropdownOpen)) {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+
+    if (digitDropdownOpen || answerDropdownOpen) {
       event.preventDefault();
       digitDropdownOpen = false;
       answerDropdownOpen = false;
+      return;
+    }
+
+    if (isActive) {
+      event.preventDefault();
+      engine.stop();
     }
   }
 
@@ -46,6 +54,8 @@
   <title>DOCCT Cognitive Control Training</title>
 </svelte:head>
 
+<svelte:window onkeydown={handlePageKeydown} />
+
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div data-app-shell class="fixed flex w-full h-full z-2 overflow-auto">
   <!-- Onboarding overlay (sibling, positioned fixed) -->
@@ -54,15 +64,15 @@
   {/if}
 
   <!-- Main layout (direct child of root) -->
-  <main onkeydown={handlePageKeydown} aria-hidden={state.phase === 'onboarding' || historyOpen} inert={state.phase === 'onboarding' || historyOpen ? true : undefined} class="flex flex-col grow md:px-6 md:items-center {isActive ? 'select-none' : ''}">
+  <main aria-hidden={state.phase === 'onboarding' || historyOpen} inert={state.phase === 'onboarding' || historyOpen ? true : undefined} class="flex flex-col grow md:px-6 md:items-center {isActive ? 'select-none' : ''}">
     <h1 class="sr-only">DOCCT Cognitive Control Training</h1>
     <!-- Header bar -->
     <div class="md:flex md:py-6 justify-between gap-2 w-full max-w-7xl">
       <!-- Left side: timer -->
       <div class="{isActive ? 'flex px-4 pt-4' : 'hidden'} gap-6 items-center md:flex md:px-0 md:pt-0">
         {#if isActive}
-          <button class="cursor-pointer flex min-h-11 gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
-            <span class="text-[#090a0d] text-xs font-semibold">END SESSION</span>
+          <button aria-keyshortcuts="Escape" title="End session (Escape)" class="cursor-pointer flex min-h-11 gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
+            <span class="text-[#090a0d] text-xs font-semibold">END SESSION<span class="hidden md:inline"> · ESC</span></span>
           </button>
         {/if}
         <!-- Timer stays visible during setup; Focus hides it only while training. -->
