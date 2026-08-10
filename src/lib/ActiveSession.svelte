@@ -320,11 +320,11 @@
 
         {#if isPaused}
           <span role="status" class="rounded-full border border-[#10b981] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#10b981]">Paused</span>
-          <button aria-label="Resume session" title="Resume" class="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={resumeSession}>
+          <button aria-label="Resume session" title="Resume" class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={resumeSession}>
             <svg viewBox="0 0 24 24" height="20" width="20" aria-hidden="true"><path fill="#10b981" d="M7 4.8v14.4c0 1.45 1.6 2.32 2.82 1.53l10.7-6.87a2.2 2.2 0 0 0 0-3.72L9.82 3.27A1.82 1.82 0 0 0 7 4.8Z"></path></svg>
           </button>
         {:else}
-          <button aria-label="Pause session" aria-keyshortcuts="Escape" title="Pause (Escape)" class="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={() => engine.pause()}>
+          <button aria-label="Pause session" title="Pause" class="flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full bg-[#0f121a] hover:bg-[#121621]" onclick={() => engine.pause()}>
             <svg viewBox="0 0 24 24" height="20" width="20" aria-hidden="true"><rect x="4" y="3" width="6" height="18" rx="2" fill="#a9b4cc"></rect><rect x="14" y="3" width="6" height="18" rx="2" fill="#10b981"></rect></svg>
           </button>
         {/if}

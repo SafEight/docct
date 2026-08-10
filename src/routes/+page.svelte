@@ -71,7 +71,7 @@
       <!-- Left side: timer -->
       <div class="{isActive ? 'flex px-4 pt-4' : 'hidden'} gap-6 items-center md:flex md:px-0 md:pt-0">
         {#if isActive}
-          <button class="cursor-pointer flex min-h-11 gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
+          <button class="cursor-pointer flex gap-2 items-center bg-[#a9b4cc] hover:bg-[#ffffff] p-1 px-4 rounded-md" onclick={() => engine.stop()}>
             <span class="text-[#090a0d] text-xs font-semibold">END SESSION</span>
           </button>
         {/if}
@@ -90,7 +90,7 @@
       <div class="{isActive ? 'hidden md:flex' : 'flex'} pt-6 pb-4 md:pt-0 md:pb-0 flex-col md:flex-row gap-2 items-center">
           <!-- DIGIT dropdown -->
           <div class="relative">
-            <button aria-expanded={digitDropdownOpen} aria-controls="digit-options" aria-haspopup="true" class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { digitDropdownOpen = !digitDropdownOpen; answerDropdownOpen = false; }}>
+            <button aria-expanded={digitDropdownOpen} aria-controls="digit-options" aria-haspopup="true" class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { digitDropdownOpen = !digitDropdownOpen; answerDropdownOpen = false; }}>
               <span class="text-[#7e889c]">DIGIT</span>
               <div class="flex items-center gap-1">
                 <span class="text-[#a9b4cc] font-medium">{state.settings.useVoice ? 'Voice' : 'Text'}</span>
@@ -113,7 +113,7 @@
 
           <!-- ANSWER dropdown -->
           <div class="relative">
-            <button aria-expanded={answerDropdownOpen} aria-controls="answer-options" aria-haspopup="true" class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { answerDropdownOpen = !answerDropdownOpen; digitDropdownOpen = false; }}>
+            <button aria-expanded={answerDropdownOpen} aria-controls="answer-options" aria-haspopup="true" class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => { answerDropdownOpen = !answerDropdownOpen; digitDropdownOpen = false; }}>
               <span class="text-[#7e889c]">ANSWER</span>
               <div class="flex items-center gap-1">
                 <span class="text-[#a9b4cc] font-medium">{state.settings.useKeypad ? 'On-screen keypad' : 'Keyboard'}</span>
@@ -137,13 +137,13 @@
           <!-- HISTORY + SETTINGS row -->
           <div class="flex flex-row gap-2 items-center">
           <!-- HISTORY button (always visible) -->
-        <button class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={openHistory}>
+        <button class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={openHistory}>
           <span class="text-[#a9b4cc] font-medium">HISTORY</span>
         </button>
 
         <!-- Settings -->
         <div class="relative flex">
-          <button aria-expanded={settingsOpen} aria-controls="settings-panel" aria-haspopup="true" class="cursor-pointer flex min-h-11 items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => settingsOpen = !settingsOpen}>
+          <button aria-expanded={settingsOpen} aria-controls="settings-panel" aria-haspopup="true" class="cursor-pointer flex items-center p-1 px-4 border border-[#a9b4cc] gap-4 rounded-md" onclick={() => settingsOpen = !settingsOpen}>
             <span class="text-[#a9b4cc] font-medium">SETTINGS</span>
           </button>
           {#if settingsOpen}
