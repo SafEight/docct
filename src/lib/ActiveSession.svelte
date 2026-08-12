@@ -209,13 +209,8 @@
       e.preventDefault();
       return; // Enter does nothing in original
     }
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      keyValue = '';
-      const input = e.target as HTMLInputElement;
-      if (input) input.value = '';
-      return;
-    }
+    // Escape is handled at the window level to pause the session.
+    // Do not intercept it here — that would swallow the first press.
   }
 
   function resetInput() {
