@@ -209,8 +209,15 @@
       e.preventDefault();
       return; // Enter does nothing in original
     }
-    // Escape is handled at the window level to pause the session.
-    // Do not intercept it here — that would swallow the first press.
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      keyValue = '';
+      if (state.phase === 'active') {
+        engine.pause();
+      }
+      return;
+    }
   }
 
   function resetInput() {
