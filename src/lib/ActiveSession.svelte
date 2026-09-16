@@ -13,9 +13,8 @@
   let selectedButton = $state<number | null>(null); // which keypad button is visually highlighted
   let keyValue = $state('');       // current keyboard input value (text input mode)
   let swipeActive = $state(false); // true while finger is down on the keypad (touch mode)
-  let lastTouchStartTime = $state(0); // timestamp of last touchstart (guards stale stuck touches)
+  let activeTouchId = $state<number | null>(null); // finger that owns the continuous keypad gesture
   let lastTouchEndTime = $state(0); // timestamp of last touchend (suppresses synthetic click)
-  let touchFailsafeTimer: ReturnType<typeof setTimeout> | null = null;
   let ringProgress = $state(201);  // SVG circle stroke-dashoffset (201 = empty, 0 = full)
   const answerValues = Array.from({ length: 17 }, (_, index) => index + 2);
 
@@ -73,26 +72,18 @@
   }
 
   function endSwipe() {
+    if (swipeActive) lastTouchEndTime = Date.now();
     swipeActive = false;
-    lastTouchEndTime = Date.now();
-    if (touchFailsafeTimer) {
-      clearTimeout(touchFailsafeTimer);
-      touchFailsafeTimer = null;
-    }
+    activeTouchId = null;
   }
 
   function handleKeypadTouchStart(answer: number, e: TouchEvent) {
     e.preventDefault();
+    if (swipeActive) return;
+    const touch = e.changedTouches[0];
+    if (!touch) return;
     swipeActive = true;
-    lastTouchStartTime = Date.now();
-    if (touchFailsafeTimer) clearTimeout(touchFailsafeTimer);
-    // Mobile browsers can drop touchend/touchcancel when a gesture is
-    // interrupted. If swipeActive gets stuck, the new-digit effect keeps
-    // re-submitting the old selected button and every answer looks wrong.
-    touchFailsafeTimer = setTimeout(() => {
-      swipeActive = false;
-      touchFailsafeTimer = null;
-    }, 750);
+    activeTouchId = touch.identifier;
     selectedButton = answer;
     engine.submitAnswer(answer);
   }
@@ -100,7 +91,7 @@
   function handleKeypadTouchMove(e: TouchEvent) {
     if (!swipeActive) return;
     e.preventDefault();
-    const touch = e.touches[0];
+    const touch = Array.from(e.touches).find((candidate) => candidate.identifier === activeTouchId);
     if (!touch) return;
     const answer = buttonFromTouch(touch);
     if (answer !== null && answer !== selectedButton) {
@@ -111,6 +102,11 @@
 
   function handleKeypadTouchEnd(e: TouchEvent) {
     if (!swipeActive) return;
+    if (
+      activeTouchId !== null &&
+      e.changedTouches.length > 0 &&
+      !Array.from(e.changedTouches).some((touch) => touch.identifier === activeTouchId)
+    ) return;
     endSwipe();
     // Already submitted in touchstart/touchmove — nothing more to do.
   }
@@ -228,26 +224,12 @@
   const inputGeneration = $derived(state.digitGeneration);
 
   // Clear selection and keyboard input on every new interval, even when two
-  // consecutive intervals happen to generate the same digit.
-  // If the user's finger is still on a button (swipeActive), re-submit that
-  // answer instead of clearing — otherwise the held button goes unregistered
-  // and the turn is marked wrong. Guard with a short freshness window so a
-  // missed touchend/touchcancel cannot keep submitting stale answers forever.
-  // Uses untrack() for swipeActive/selectedButton so the effect ONLY re-runs
-  // when digitGeneration advances — not on every notify() → state replacement,
-  // which would clear the input or highlight immediately after submission.
+  // consecutive intervals happen to generate the same digit. A touch gesture
+  // stays active across intervals, but the previous answer is not automatically
+  // submitted for the new turn; the next swipe movement chooses that answer.
   $effect(() => {
     inputGeneration; // only tracked dependency
-    const swiping = untrack(() => swipeActive);
-    const selected = untrack(() => selectedButton);
-    const touchAge = Date.now() - untrack(() => lastTouchStartTime);
-    if (swiping && selected !== null && touchAge < 750) {
-      // Finger still down on a button — re-submit for the new turn
-      engine.submitAnswer(selected);
-    } else {
-      if (swiping && touchAge >= 750) endSwipe();
-      selectedButton = null;
-    }
+    selectedButton = null;
     keyValue = '';
   });
 
@@ -258,6 +240,8 @@
     'Wait for enough digits...'
   );
 </script>
+
+<svelte:window ontouchend={handleKeypadTouchEnd} ontouchcancel={handleKeypadTouchEnd} onblur={endSwipe} />
 
 {#snippet digitDisplay(compact = false)}
   <div
@@ -341,8 +325,6 @@
         class="flex justify-center"
         style="touch-action: none;"
         ontouchmove={handleKeypadTouchMove}
-        ontouchend={handleKeypadTouchEnd}
-        ontouchcancel={handleKeypadTouchEnd}
       >
         {#if state.settings.keypadLayout === 'sequential'}
           <div class="sequential-keypad flex flex-col items-center gap-3">
