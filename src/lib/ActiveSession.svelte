@@ -276,12 +276,6 @@
 {/snippet}
 
 <div class="active-session relative flex grow select-none flex-col items-center justify-end gap-12 py-6 md:flex-row md:grow-0 md:justify-evenly md:gap-24">
-  <!-- Faint giant digit backdrop: always visible in voice and text modes,
-       so the current digit can be read even when audio is hard to hear.
-       Purely visual — screen readers use the small status digit above. -->
-  {#if state.currentDigit !== null && !isPaused}
-    <span aria-hidden="true" class="pointer-events-none absolute inset-0 flex items-center justify-center select-none text-[38vw] md:text-[24rem] leading-none font-extrabold text-[#12161f]">{state.currentDigit}</span>
-  {/if}
   <!-- Streak bar + label -->
   <div class="relative flex flex-col items-center">
     <div class="flex md:flex-col w-[200px] md:w-auto md:h-[200px] overflow-hidden rounded-full gap-3">
