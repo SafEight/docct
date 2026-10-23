@@ -280,7 +280,7 @@
        so the current digit can be read even when audio is hard to hear.
        Purely visual — screen readers use the small status digit above. -->
   {#if state.currentDigit !== null && !isPaused}
-    <span aria-hidden="true" class="-z-10 pointer-events-none absolute inset-0 flex items-center justify-center select-none text-[38vw] md:text-[24rem] leading-none font-extrabold text-[#12161f]">{state.currentDigit}</span>
+    <span aria-hidden="true" class="-z-10 pointer-events-none absolute top-0 inset-x-0 bottom-[45%] md:bottom-0 flex items-center justify-center select-none text-[60vw] md:text-[24rem] leading-none font-extrabold text-[#12161f]">{state.currentDigit}</span>
   {/if}
   <!-- Streak bar + label -->
   <div class="relative flex flex-col items-center">
